@@ -26,6 +26,9 @@ CREATE INDEX IF NOT EXISTS idx_audit_events_action        ON audit_events (actio
 CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run    ON audit_events (is_dry_run);
 CREATE INDEX IF NOT EXISTS idx_audit_events_package_type  ON audit_events (package_type);
 CREATE INDEX IF NOT EXISTS idx_audit_events_username      ON audit_events (username);
+CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run_created_at ON audit_events (is_dry_run, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run_action_created_at ON audit_events (is_dry_run, action, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_events_curated_repository_name ON audit_events (curated_repository_name);
 
 CREATE TABLE IF NOT EXISTS event_policies (
     id            SERIAL PRIMARY KEY,
