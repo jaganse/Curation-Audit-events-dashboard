@@ -37,6 +37,8 @@ def run():
                 if event.get("policies"):
                     total_policies += upsert_policies(conn, event["id"], event["policies"])
 
+            # Commit each mode independently — real and dry-run are separate streams.
+            # A re-run will idempotently upsert already-committed events.
             conn.commit()
             print(f"  {mode}: {count} events upserted")
 
