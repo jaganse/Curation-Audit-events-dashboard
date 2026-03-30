@@ -96,7 +96,7 @@ def _var(name, label, query):
         "multi": True,
         "refresh": 2,
         "sort": 1,
-        "current": {},
+        "current": {"selected": True, "text": "All", "value": "$__all"},
     }
 
 
