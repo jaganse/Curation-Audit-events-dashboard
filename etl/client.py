@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from datetime import datetime
 
 import requests
@@ -12,8 +13,11 @@ class CurationAPIClient:
         self.session = requests.Session()
         self.session.headers.update({"Authorization": f"Bearer {token}"})
 
-    def fetch_events(self, dry_run: bool, start: datetime, end: datetime):
+    def fetch_events(self, dry_run: bool, start: datetime, end: datetime) -> "Iterator[dict]":
         """Yield all audit events for the time window, paginating automatically."""
+        if start >= end:
+            raise ValueError(f"start must be before end (got start={start!r}, end={end!r})")
+
         url = f"{self.base_url}{self.ENDPOINT}"
         offset = 0
         total = None
@@ -33,8 +37,10 @@ class CurationAPIClient:
             resp.raise_for_status()
             body = resp.json()
 
-            if total is None:
-                total = body["meta"]["total_count"]
+            meta = body.get("meta")
+            if not meta or "total_count" not in meta:
+                raise ValueError(f"Unexpected API response — missing 'meta.total_count'. Body keys: {list(body.keys())}")
+            total = meta["total_count"]
 
             events = body.get("data", [])
             yield from events

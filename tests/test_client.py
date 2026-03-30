@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from etl.client import CurationAPIClient
 
 BASE_URL = "https://myinstance.jfrog.io"
@@ -42,6 +40,8 @@ def test_fetch_paginates():
         results = list(client.fetch_events(dry_run=False, start=START, end=END))
     assert len(results) == 2500
     assert mock_get.call_count == 2
+    assert mock_get.call_args_list[0].kwargs["params"]["offset"] == 0
+    assert mock_get.call_args_list[1].kwargs["params"]["offset"] == 2000
 
 
 def test_fetch_empty():
