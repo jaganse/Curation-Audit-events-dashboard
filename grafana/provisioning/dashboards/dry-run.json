@@ -445,7 +445,6 @@
           "format": "table"
         },
         "includeAll": true,
-        "allValue": null,
         "multi": true,
         "refresh": 2,
         "sort": 1,

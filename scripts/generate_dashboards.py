@@ -93,7 +93,6 @@ def _var(name, label, query):
         "datasource": DS_REF,
         "query": {"datasource": DS_REF, "rawSql": query, "format": "table"},
         "includeAll": True,
-        "allValue": None,
         "multi": True,
         "refresh": 2,
         "sort": 1,
