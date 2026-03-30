@@ -92,11 +92,11 @@ def _var(name, label, query):
         "type": "query",
         "datasource": DS_REF,
         "query": {"datasource": DS_REF, "rawSql": query, "format": "table"},
-        "includeAll": True,
-        "multi": True,
+        "includeAll": False,
+        "multi": False,
         "refresh": 2,
         "sort": 1,
-        "current": {"selected": True, "text": "All", "value": "$__all"},
+        "current": {"selected": True, "text": "All", "value": "All"},
     }
 
 
@@ -132,8 +132,8 @@ def _dashboard(title, uid, panels, variables):
 
 def _where(dry_run_flag, extra_filters="", include_repo_filter=True):
     tf = "$__timeFilter(created_at)"
-    pt = "package_type IN ($package_type)"
-    repo = "curated_repository_name IN ($repository)"
+    pt = "('$package_type' = 'All' OR package_type = '$package_type')"
+    repo = "('$repository' = 'All' OR curated_repository_name = '$repository')"
     parts = [f"WHERE is_dry_run = {dry_run_flag}", f"AND {tf}", f"AND {pt}"]
     if include_repo_filter:
         parts.append(f"AND {repo}")
@@ -193,8 +193,8 @@ LIMIT 20""",
 FROM audit_events ae
 JOIN event_policies ep ON ae.id = ep.event_id
 WHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at)
-AND ae.package_type IN ($package_type)
-AND ae.curated_repository_name IN ($repository)
+AND ('$package_type' = 'All' OR ae.package_type = '$package_type')
+AND ('$repository' = 'All' OR ae.curated_repository_name = '$repository')
 GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
             grid_y=12, grid_x=12, grid_w=12,
@@ -229,11 +229,11 @@ ORDER BY count DESC""",
     variables = [
         _var(
             "package_type", "Package Type",
-            "SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+            "SELECT 'All' UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         ),
         _var(
             "repository", "Repository",
-            "SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+            "SELECT 'All' UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         ),
     ]
 
@@ -279,7 +279,7 @@ LIMIT 20""",
 FROM audit_events ae
 JOIN event_policies ep ON ae.id = ep.event_id
 WHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at)
-AND ae.package_type IN ($package_type)
+AND ('$package_type' = 'All' OR ae.package_type = '$package_type')
 GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
             grid_y=12, grid_x=12, grid_w=12,
@@ -314,7 +314,7 @@ ORDER BY count DESC""",
     variables = [
         _var(
             "package_type", "Package Type",
-            "SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = true ORDER BY 1",
+            "SELECT 'All' UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = true ORDER BY 1",
         ),
     ]
 
