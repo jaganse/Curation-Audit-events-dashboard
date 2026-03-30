@@ -94,7 +94,7 @@ def _var(name, label, query):
         "query": {"datasource": DS_REF, "rawSql": query, "format": "table"},
         "includeAll": True,
         "allValue": "All",
-        "multi": False,
+        "multi": True,
         "refresh": 2,
         "sort": 1,
         "current": {},
@@ -129,18 +129,19 @@ def _dashboard(title, uid, panels, variables):
 
 # ── SQL helpers ─────────────────────────────────────────────────────────────
 
-def _where(dry_run_flag, extra_filters=""):
+def _where(dry_run_flag, extra_filters="", include_repo_filter=True):
     tf = "$__timeFilter(created_at)"
-    pt = "AND ('$package_type' = 'All' OR package_type = '$package_type')"
-    return f"WHERE is_dry_run = {dry_run_flag} AND {tf} {pt} {extra_filters}"
+    pt = "AND ('$package_type' = 'All' OR package_type IN ($package_type))"
+    repo = "AND ('$repository' = 'All' OR curated_repository_name = '$repository')" if include_repo_filter else ""
+    return f"WHERE is_dry_run = {dry_run_flag} AND {tf} {pt} {repo} {extra_filters}"
 
 
-def _trend_sql(dry_run_flag, action):
+def _trend_sql(dry_run_flag, action, include_repo_filter=True):
     return f"""SELECT
   $__timeGroupAlias(created_at,'1d') AS time,
   COUNT(*) AS {action}
 FROM audit_events
-{_where(dry_run_flag)} AND action = '{action}'
+{_where(dry_run_flag, include_repo_filter=include_repo_filter)} AND action = '{action}'
 GROUP BY 1
 ORDER BY 1"""
 
@@ -184,6 +185,7 @@ LIMIT 20""",
 FROM audit_events ae
 JOIN event_policies ep ON ae.id = ep.event_id
 WHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at)
+AND ('$repository' = 'All' OR ae.curated_repository_name = '$repository')
 GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
             grid_y=12, grid_x=12, grid_w=12,
@@ -232,8 +234,8 @@ ORDER BY count DESC""",
 # ── Dry Run dashboard ────────────────────────────────────────────────────────
 
 def dry_run():
-    w = _where("true")
-    w_blocked = _where("true", "AND action = 'blocked'")
+    w = _where("true", include_repo_filter=False)
+    w_blocked = _where("true", "AND action = 'blocked'", include_repo_filter=False)
 
     panels = [
         _stat("Total Dry-Run Events",  f"SELECT COUNT(*) FROM audit_events {w}",                        "blue",   0,  0),
@@ -242,8 +244,8 @@ def dry_run():
         _stat("Unique Packages",       f"SELECT COUNT(DISTINCT package_name) FROM audit_events {w}",    "purple", 18, 0),
         _timeseries(
             "Simulated Blocked vs Approved Over Time",
-            _trend_sql("true", "approved"),
-            _trend_sql("true", "blocked"),
+            _trend_sql("true", "approved", include_repo_filter=False),
+            _trend_sql("true", "blocked", include_repo_filter=False),
             grid_y=4,
         ),
         _table(
@@ -271,6 +273,20 @@ GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
             grid_y=12, grid_x=12, grid_w=12,
         ),
+        _table(
+            "User Activity",
+            f"""SELECT
+  username,
+  COUNT(*) AS total_events,
+  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,
+  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count
+FROM audit_events
+{w}
+GROUP BY username
+ORDER BY total_events DESC
+LIMIT 20""",
+            grid_y=20, grid_x=0, grid_w=12,
+        ),
         _pie(
             "Package Type Distribution",
             f"""SELECT
@@ -280,7 +296,7 @@ FROM audit_events
 {w}
 GROUP BY package_type
 ORDER BY count DESC""",
-            grid_y=20, grid_x=0,
+            grid_y=20, grid_x=12,
         ),
     ]
 
