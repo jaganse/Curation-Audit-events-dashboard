@@ -14,6 +14,7 @@ TEST_ID_BASE = 9_999_000
 def conn():
     c = psycopg2.connect(DB_URL)
     yield c
+    c.rollback()  # clear any failed transaction before cleanup
     with c.cursor() as cur:
         cur.execute(
             "DELETE FROM event_policies WHERE event_id IN "
@@ -52,6 +53,7 @@ def _event(seq=1, package_name="test-lodash", action="approved"):
 def test_upsert_inserts(conn):
     count = upsert_events(conn, [_event(1)], is_dry_run=False)
     assert count == 1
+    conn.commit()
     with conn.cursor() as cur:
         cur.execute("SELECT action, is_dry_run FROM audit_events WHERE id = %s", (TEST_ID_BASE + 1,))
         assert cur.fetchone() == ("approved", False)
@@ -59,7 +61,9 @@ def test_upsert_inserts(conn):
 
 def test_upsert_idempotent(conn):
     upsert_events(conn, [_event(2)], is_dry_run=False)
+    conn.commit()
     upsert_events(conn, [_event(2)], is_dry_run=False)
+    conn.commit()
     with conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM audit_events WHERE id = %s", (TEST_ID_BASE + 2,))
         assert cur.fetchone()[0] == 1
@@ -71,6 +75,7 @@ def test_upsert_empty(conn):
 
 def test_upsert_sets_dry_run_flag(conn):
     upsert_events(conn, [_event(3, package_name="test-dry")], is_dry_run=True)
+    conn.commit()
     with conn.cursor() as cur:
         cur.execute("SELECT is_dry_run FROM audit_events WHERE id = %s", (TEST_ID_BASE + 3,))
         assert cur.fetchone()[0] is True
@@ -78,6 +83,7 @@ def test_upsert_sets_dry_run_flag(conn):
 
 def test_policies_inserts(conn):
     upsert_events(conn, [_event(4, package_name="test-blocked", action="blocked")], is_dry_run=False)
+    conn.commit()
     policies = [
         {
             "policy_name": "security-policy",
@@ -89,6 +95,7 @@ def test_policies_inserts(conn):
     ]
     count = upsert_policies(conn, TEST_ID_BASE + 4, policies)
     assert count == 1
+    conn.commit()
     with conn.cursor() as cur:
         cur.execute(
             "SELECT policy_name, severity FROM event_policies WHERE event_id = %s",
@@ -99,8 +106,11 @@ def test_policies_inserts(conn):
 
 def test_policies_replaces_existing(conn):
     upsert_events(conn, [_event(5, package_name="test-replace", action="blocked")], is_dry_run=False)
+    conn.commit()
     upsert_policies(conn, TEST_ID_BASE + 5, [{"policy_name": "old", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}])
+    conn.commit()
     upsert_policies(conn, TEST_ID_BASE + 5, [{"policy_name": "new", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}])
+    conn.commit()
     with conn.cursor() as cur:
         cur.execute("SELECT policy_name FROM event_policies WHERE event_id = %s", (TEST_ID_BASE + 5,))
         rows = [r[0] for r in cur.fetchall()]

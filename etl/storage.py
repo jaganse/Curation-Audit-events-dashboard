@@ -1,3 +1,9 @@
+"""PostgreSQL upsert helpers for audit_events and event_policies.
+
+Callers are responsible for conn.commit() after calling these functions.
+On exception, callers must call conn.rollback() before reusing the connection.
+"""
+
 from psycopg2.extras import execute_values
 
 _UPSERT_SQL = """
@@ -14,8 +20,19 @@ ON CONFLICT (id) DO UPDATE SET
     username                       = EXCLUDED.username,
     user_mail                      = EXCLUDED.user_mail,
     package_version                = EXCLUDED.package_version,
+    package_type                   = EXCLUDED.package_type,
+    package_name                   = EXCLUDED.package_name,
+    package_url                    = EXCLUDED.package_url,
+    event_origin                   = EXCLUDED.event_origin,
     curated_repository_name        = EXCLUDED.curated_repository_name,
-    curated_repository_server_name = EXCLUDED.curated_repository_server_name
+    curated_repository_server_name = EXCLUDED.curated_repository_server_name,
+    curated_project                = EXCLUDED.curated_project,
+    origin_repository_name         = EXCLUDED.origin_repository_name,
+    origin_repository_server_name  = EXCLUDED.origin_repository_server_name,
+    origin_project                 = EXCLUDED.origin_project,
+    public_repo_url                = EXCLUDED.public_repo_url,
+    public_repo_name               = EXCLUDED.public_repo_name
+    -- is_dry_run intentionally excluded: dry-run status is immutable once written
 """
 
 _DELETE_POLICIES = "DELETE FROM event_policies WHERE event_id = %s"
@@ -33,12 +50,13 @@ def upsert_events(conn, events: list, is_dry_run: bool) -> int:
     rows = [_event_row(e, is_dry_run) for e in events]
     with conn.cursor() as cur:
         execute_values(cur, _UPSERT_SQL, rows)
-    conn.commit()
     return len(rows)
 
 
 def upsert_policies(conn, event_id: int, policies: list) -> int:
     """Replace all policy rows for an event. Returns count inserted."""
+    with conn.cursor() as cur:
+        cur.execute(_DELETE_POLICIES, (event_id,))
     if not policies:
         return 0
     rows = [
@@ -53,9 +71,7 @@ def upsert_policies(conn, event_id: int, policies: list) -> int:
         for p in policies
     ]
     with conn.cursor() as cur:
-        cur.execute(_DELETE_POLICIES, (event_id,))
         execute_values(cur, _INSERT_POLICIES, rows)
-    conn.commit()
     return len(rows)
 
 
