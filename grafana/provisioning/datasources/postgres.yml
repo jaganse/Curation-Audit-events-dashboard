@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL
+    type: postgres
+    uid: curation_pg
+    url: postgres:5432
+    user: audit
+    secureJsonData:
+      password: audit
+    jsonData:
+      database: audit
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    isDefault: true
+    editable: false
