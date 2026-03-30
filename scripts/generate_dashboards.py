@@ -132,7 +132,7 @@ def _dashboard(title, uid, panels, variables):
 def _where(dry_run_flag, extra_filters="", include_repo_filter=True):
     tf = "$__timeFilter(created_at)"
     pt = "AND ('$package_type' = 'All' OR package_type IN ($package_type))"
-    repo = "AND ('$repository' = 'All' OR curated_repository_name = '$repository')" if include_repo_filter else ""
+    repo = "AND ('$repository' = 'All' OR curated_repository_name IN ($repository))" if include_repo_filter else ""
     return f"WHERE is_dry_run = {dry_run_flag} AND {tf} {pt} {repo} {extra_filters}"
 
 
@@ -185,7 +185,8 @@ LIMIT 20""",
 FROM audit_events ae
 JOIN event_policies ep ON ae.id = ep.event_id
 WHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at)
-AND ('$repository' = 'All' OR ae.curated_repository_name = '$repository')
+AND ('$package_type' = 'All' OR ae.package_type IN ($package_type))
+AND ('$repository' = 'All' OR ae.curated_repository_name IN ($repository))
 GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
             grid_y=12, grid_x=12, grid_w=12,
@@ -269,6 +270,7 @@ LIMIT 20""",
 FROM audit_events ae
 JOIN event_policies ep ON ae.id = ep.event_id
 WHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at)
+AND ('$package_type' = 'All' OR ae.package_type IN ($package_type))
 GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
             grid_y=12, grid_x=12, grid_w=12,

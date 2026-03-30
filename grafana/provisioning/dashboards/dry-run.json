@@ -336,7 +336,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at)\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
+          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at)\nAND ('$package_type' = 'All' OR ae.package_type IN ($package_type))\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
           "format": "table",
           "refId": "A"
         }
