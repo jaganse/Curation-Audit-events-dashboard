@@ -60,11 +60,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))  ",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 1
     },
     {
       "type": "stat",
@@ -103,11 +104,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))   AND action = 'blocked'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type)) AND action = 'blocked'",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 2
     },
     {
       "type": "stat",
@@ -146,11 +148,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))   AND action = 'approved'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type)) AND action = 'approved'",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 3
     },
     {
       "type": "stat",
@@ -189,11 +192,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT package_name) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))  ",
+          "rawSql": "SELECT COUNT(DISTINCT package_name) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 4
     },
     {
       "type": "timeseries",
@@ -263,7 +267,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d') AS time,\n  COUNT(*) AS approved\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))   AND action = 'approved'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type)) AND action = 'approved'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "A"
         },
@@ -272,11 +276,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d') AS time,\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))   AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type)) AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "B"
         }
-      ]
+      ],
+      "id": 5
     },
     {
       "type": "table",
@@ -304,11 +309,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS block_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))  AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY block_count DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS block_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type)) AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY block_count DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 6
     },
     {
       "type": "table",
@@ -340,7 +346,8 @@
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 7
     },
     {
       "type": "table",
@@ -368,11 +375,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))  \nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 8
     },
     {
       "type": "piechart",
@@ -404,11 +412,12 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))  \nGROUP BY package_type\nORDER BY count DESC",
+          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type IN ($package_type))\nGROUP BY package_type\nORDER BY count DESC",
           "format": "table",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 9
     }
   ],
   "refresh": "1h",

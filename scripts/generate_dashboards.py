@@ -102,6 +102,8 @@ def _var(name, label, query):
 
 
 def _dashboard(title, uid, panels, variables):
+    for i, panel in enumerate(panels, start=1):
+        panel["id"] = i
     return {
         "__inputs": [
             {"name": "DS_POSTGRESQL", "label": "PostgreSQL", "type": "datasource", "pluginId": "postgres"}
@@ -131,17 +133,23 @@ def _dashboard(title, uid, panels, variables):
 
 def _where(dry_run_flag, extra_filters="", include_repo_filter=True):
     tf = "$__timeFilter(created_at)"
-    pt = "AND ('$package_type' = 'All' OR package_type IN ($package_type))"
-    repo = "AND ('$repository' = 'All' OR curated_repository_name IN ($repository))" if include_repo_filter else ""
-    return f"WHERE is_dry_run = {dry_run_flag} AND {tf} {pt} {repo} {extra_filters}"
+    pt = "('$package_type' = 'All' OR package_type IN ($package_type))"
+    repo = "('$repository' = 'All' OR curated_repository_name IN ($repository))"
+    parts = [f"WHERE is_dry_run = {dry_run_flag}", f"AND {tf}", f"AND {pt}"]
+    if include_repo_filter:
+        parts.append(f"AND {repo}")
+    if extra_filters:
+        parts.append(extra_filters)
+    return " ".join(parts)
 
 
 def _trend_sql(dry_run_flag, action, include_repo_filter=True):
+    w = _where(dry_run_flag, extra_filters=f"AND action = '{action}'", include_repo_filter=include_repo_filter)
     return f"""SELECT
-  $__timeGroupAlias(created_at,'1d') AS time,
+  $__timeGroupAlias(created_at,'1d'),
   COUNT(*) AS {action}
 FROM audit_events
-{_where(dry_run_flag, include_repo_filter=include_repo_filter)} AND action = '{action}'
+{w}
 GROUP BY 1
 ORDER BY 1"""
 
@@ -150,12 +158,13 @@ ORDER BY 1"""
 
 def real_events():
     w = _where("false")
-    w_blocked = _where("false", "AND action = 'blocked'")
+    w_blocked = _where("false", extra_filters="AND action = 'blocked'")
+    w_approved = _where("false", extra_filters="AND action = 'approved'")
 
     panels = [
         _stat("Total Events",    f"SELECT COUNT(*) FROM audit_events {w}",                        "blue",   0,  0),
-        _stat("Blocked",         f"SELECT COUNT(*) FROM audit_events {w} AND action = 'blocked'", "red",    6,  0),
-        _stat("Approved",        f"SELECT COUNT(*) FROM audit_events {w} AND action = 'approved'","green",  12, 0),
+        _stat("Blocked",         f"SELECT COUNT(*) FROM audit_events {w_blocked}",                "red",    6,  0),
+        _stat("Approved",        f"SELECT COUNT(*) FROM audit_events {w_approved}",               "green",  12, 0),
         _stat("Unique Packages", f"SELECT COUNT(DISTINCT package_name) FROM audit_events {w}",    "purple", 18, 0),
         _timeseries(
             "Blocked vs Approved Over Time",
@@ -236,12 +245,13 @@ ORDER BY count DESC""",
 
 def dry_run():
     w = _where("true", include_repo_filter=False)
-    w_blocked = _where("true", "AND action = 'blocked'", include_repo_filter=False)
+    w_blocked = _where("true", extra_filters="AND action = 'blocked'", include_repo_filter=False)
+    w_approved = _where("true", extra_filters="AND action = 'approved'", include_repo_filter=False)
 
     panels = [
         _stat("Total Dry-Run Events",  f"SELECT COUNT(*) FROM audit_events {w}",                        "blue",   0,  0),
-        _stat("Would Be Blocked",      f"SELECT COUNT(*) FROM audit_events {w} AND action = 'blocked'", "red",    6,  0),
-        _stat("Would Be Approved",     f"SELECT COUNT(*) FROM audit_events {w} AND action = 'approved'","green",  12, 0),
+        _stat("Would Be Blocked",      f"SELECT COUNT(*) FROM audit_events {w_blocked}",                "red",    6,  0),
+        _stat("Would Be Approved",     f"SELECT COUNT(*) FROM audit_events {w_approved}",               "green",  12, 0),
         _stat("Unique Packages",       f"SELECT COUNT(DISTINCT package_name) FROM audit_events {w}",    "purple", 18, 0),
         _timeseries(
             "Simulated Blocked vs Approved Over Time",
