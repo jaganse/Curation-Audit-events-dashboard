@@ -32,7 +32,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 0
       },
@@ -69,6 +69,50 @@
     },
     {
       "type": "stat",
+      "title": "% Would Be Blocked",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS pct_blocked FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 2
+    },
+    {
+      "type": "stat",
       "title": "Would Be Blocked",
       "datasource": {
         "type": "postgres",
@@ -76,8 +120,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 8,
         "y": 0
       },
       "options": {
@@ -109,7 +153,7 @@
           "refId": "A"
         }
       ],
-      "id": 2
+      "id": 3
     },
     {
       "type": "stat",
@@ -120,7 +164,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 12,
         "y": 0
       },
@@ -153,7 +197,51 @@
           "refId": "A"
         }
       ],
-      "id": 3
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "Would Be Waived",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#d29922",
+            "mode": "fixed"
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND action = 'waived'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 5
     },
     {
       "type": "stat",
@@ -164,8 +252,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 4,
+        "x": 20,
         "y": 0
       },
       "options": {
@@ -197,11 +285,11 @@
           "refId": "A"
         }
       ],
-      "id": 4
+      "id": 6
     },
     {
       "type": "timeseries",
-      "title": "Simulated Blocked vs Approved Over Time",
+      "title": "Simulated Blocked / Approved / Waived Over Time",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -258,6 +346,21 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "waived"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#d29922",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
@@ -279,9 +382,98 @@
           "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS waived\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND action = 'waived'\nGROUP BY 1\nORDER BY 1",
+          "format": "time_series",
+          "refId": "C"
         }
       ],
-      "id": 5
+      "id": 7
+    },
+    {
+      "type": "barchart",
+      "title": "Approved / Blocked / Waived by Ecosystem",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "options": {
+        "orientation": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  package_type,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved,\n  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked,\n  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY package_type\nORDER BY (SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END)\n        + SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END)\n        + SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END)) DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 8
+    },
+    {
+      "type": "barchart",
+      "title": "% Would Be Blocked by Ecosystem",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  package_type,\n  ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)\n        / NULLIF(COUNT(*), 0), 1) AS pct_blocked\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY package_type\nORDER BY pct_blocked DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 9
     },
     {
       "type": "table",
@@ -292,9 +484,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 8,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "options": {
         "showHeader": true
@@ -314,85 +506,19 @@
           "refId": "A"
         }
       ],
-      "id": 6
-    },
-    {
-      "type": "table",
-      "title": "Dry-Run Policy Breakdown",
-      "datasource": {
-        "type": "postgres",
-        "uid": "curation_pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 12
-      },
-      "options": {
-        "showHeader": true
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "curation_pg"
-          },
-          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at)\nAND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "id": 7
-    },
-    {
-      "type": "table",
-      "title": "User Activity",
-      "datasource": {
-        "type": "postgres",
-        "uid": "curation_pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 20
-      },
-      "options": {
-        "showHeader": true
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "curation_pg"
-          },
-          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "id": 8
+      "id": 10
     },
     {
       "type": "piechart",
-      "title": "Package Type Distribution",
+      "title": "Would-Be Blocked by Condition Category",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
+        "w": 8,
+        "x": 8,
         "y": 20
       },
       "options": {
@@ -412,12 +538,313 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY package_type\nORDER BY count DESC",
+          "rawSql": "SELECT\n  COALESCE(ep.condition_category, 'N/A') AS condition_category,\n  COUNT(*) AS count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')\n  AND ae.action = 'blocked'\n  AND (ep.condition_category != '$exclude_condition_category'\n       OR '$exclude_condition_category' = '')\nGROUP BY ep.condition_category\nORDER BY count DESC",
           "format": "table",
           "refId": "A"
         }
       ],
-      "id": 9
+      "id": 11
+    },
+    {
+      "type": "piechart",
+      "title": "Would-Be Blocked by Condition Name",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 20
+      },
+      "options": {
+        "pieType": "pie",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  COALESCE(ep.condition_name, 'N/A') AS condition_name,\n  COUNT(*) AS count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')\n  AND ae.action = 'blocked'\n  AND (ep.condition_name != '$exclude_condition_name'\n       OR '$exclude_condition_name' = '')\nGROUP BY ep.condition_name\nORDER BY count DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 12
+    },
+    {
+      "type": "table",
+      "title": "Dry-Run Policy Breakdown",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 28
+      },
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 13
+    },
+    {
+      "type": "piechart",
+      "title": "Would-Be Waived by Ecosystem",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 28
+      },
+      "options": {
+        "pieType": "pie",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND action = 'waived'\nGROUP BY package_type\nORDER BY count DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 14
+    },
+    {
+      "type": "table",
+      "title": "User Activity",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 28
+      },
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 15
+    },
+    {
+      "type": "stat",
+      "title": "High-Persistence Users",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 36
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT COUNT(DISTINCT username)\nFROM (\n  SELECT username,\n    SUM(is_window_start) AS sessions\n  FROM mv_download_windows\n  WHERE is_dry_run = true AND action = 'blocked'\n    AND $__timeFilter(created_at)\n    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  GROUP BY username, package_name\n  HAVING SUM(is_window_start) >= 3\n) sub",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 16
+    },
+    {
+      "type": "table",
+      "title": "Persistent Blocked Packages",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 36
+      },
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  username,\n  SUM(is_window_start) AS unique_sessions,\n  COUNT(*) AS total_events,\n  MIN(created_at) AS first_seen,\n  MAX(created_at) AS last_seen\nFROM mv_download_windows\nWHERE is_dry_run = true AND action = 'blocked'\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY package_name, package_type, username\nHAVING SUM(is_window_start) > 1\nORDER BY unique_sessions DESC\nLIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "Download Sessions Over Time",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "approved"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "blocked"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM mv_download_windows\nWHERE is_dry_run = true AND action = 'approved'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY 1\nORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM mv_download_windows\nWHERE is_dry_run = true AND action = 'blocked'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\nGROUP BY 1\nORDER BY 1",
+          "format": "time_series",
+          "refId": "B"
+        }
+      ],
+      "id": 18
     }
   ],
   "refresh": "1h",
@@ -452,6 +879,58 @@
           "selected": true,
           "text": "All",
           "value": "All"
+        }
+      },
+      {
+        "name": "exclude_condition_category",
+        "label": "Exclude Condition Category",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "curation_pg"
+        },
+        "query": {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT '' AS condition_category UNION SELECT DISTINCT condition_category FROM event_policies WHERE condition_category IS NOT NULL ORDER BY 1",
+          "format": "table"
+        },
+        "includeAll": false,
+        "multi": false,
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "exclude_condition_name",
+        "label": "Exclude Condition Name",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "curation_pg"
+        },
+        "query": {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT '' AS condition_name UNION SELECT DISTINCT condition_name FROM event_policies WHERE condition_name IS NOT NULL ORDER BY 1",
+          "format": "table"
+        },
+        "includeAll": false,
+        "multi": false,
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
         }
       }
     ]

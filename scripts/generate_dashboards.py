@@ -437,21 +437,77 @@ ORDER BY 1""",
 # ── Dry Run dashboard ────────────────────────────────────────────────────────
 
 def dry_run():
-    w = _where("true", include_repo_filter=False)
-    w_blocked = _where("true", extra_filters="AND action = 'blocked'", include_repo_filter=False)
+    w          = _where("true", include_repo_filter=False)
+    w_blocked  = _where("true", extra_filters="AND action = 'blocked'", include_repo_filter=False)
     w_approved = _where("true", extra_filters="AND action = 'approved'", include_repo_filter=False)
+    w_waived   = _where("true", extra_filters="AND action = 'waived'",  include_repo_filter=False)
+    wj = (
+        "WHERE ae.is_dry_run = true"
+        " AND $__timeFilter(ae.created_at)"
+        " AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')"
+    )
 
     panels = [
-        _stat("Total Dry-Run Events",  f"SELECT COUNT(*) FROM audit_events {w}",                        "blue",   0,  0),
-        _stat("Would Be Blocked",      f"SELECT COUNT(*) FROM audit_events {w_blocked}",                "red",    6,  0),
-        _stat("Would Be Approved",     f"SELECT COUNT(*) FROM audit_events {w_approved}",               "green",  12, 0),
-        _stat("Unique Packages",       f"SELECT COUNT(DISTINCT package_name) FROM audit_events {w}",    "purple", 18, 0),
+        # ── Stats row (6 × w=4) ────────────────────────────────────────────
+        _stat("Total Dry-Run Events",
+              f"SELECT COUNT(*) FROM audit_events {w}",
+              "blue",    0,  0, grid_w=4),
+        _stat("% Would Be Blocked",
+              f"SELECT ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)"
+              f" / NULLIF(COUNT(*), 0), 1) AS pct_blocked FROM audit_events {w}",
+              "orange",  4,  0, grid_w=4),
+        _stat("Would Be Blocked",
+              f"SELECT COUNT(*) FROM audit_events {w_blocked}",
+              "red",     8,  0, grid_w=4),
+        _stat("Would Be Approved",
+              f"SELECT COUNT(*) FROM audit_events {w_approved}",
+              "green",   12, 0, grid_w=4),
+        _stat("Would Be Waived",
+              f"SELECT COUNT(*) FROM audit_events {w_waived}",
+              "#d29922", 16, 0, grid_w=4),
+        _stat("Unique Packages",
+              f"SELECT COUNT(DISTINCT package_name) FROM audit_events {w}",
+              "purple",  20, 0, grid_w=4),
+
+        # ── Timeseries with waived ─────────────────────────────────────────
         _timeseries(
-            "Simulated Blocked vs Approved Over Time",
+            "Simulated Blocked / Approved / Waived Over Time",
             _trend_sql("true", "approved", include_repo_filter=False),
-            _trend_sql("true", "blocked", include_repo_filter=False),
+            _trend_sql("true", "blocked",  include_repo_filter=False),
             grid_y=4,
+            sql_waived=_trend_sql("true", "waived", include_repo_filter=False),
         ),
+
+        # ── Ecosystem breakdown row (y=12) ─────────────────────────────────
+        _barchart(
+            "Approved / Blocked / Waived by Ecosystem",
+            f"""SELECT
+  package_type,
+  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved,
+  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked,
+  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived
+FROM audit_events
+{w}
+GROUP BY package_type
+ORDER BY (SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END)
+        + SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END)
+        + SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END)) DESC""",
+            grid_y=12, grid_x=0, grid_w=12,
+        ),
+        _barchart(
+            "% Would Be Blocked by Ecosystem",
+            f"""SELECT
+  package_type,
+  ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0), 1) AS pct_blocked
+FROM audit_events
+{w}
+GROUP BY package_type
+ORDER BY pct_blocked DESC""",
+            grid_y=12, grid_x=12, grid_w=12, orientation="horizontal",
+        ),
+
+        # ── Condition analysis row (y=20) ──────────────────────────────────
         _table(
             "Top Would-Be Blocked Packages",
             f"""SELECT
@@ -463,8 +519,40 @@ FROM audit_events
 GROUP BY package_name, package_type
 ORDER BY block_count DESC
 LIMIT 20""",
-            grid_y=12, grid_x=0, grid_w=12,
+            grid_y=20, grid_x=0, grid_w=8,
         ),
+        _pie(
+            "Would-Be Blocked by Condition Category",
+            f"""SELECT
+  COALESCE(ep.condition_category, 'N/A') AS condition_category,
+  COUNT(*) AS count
+FROM audit_events ae
+JOIN event_policies ep ON ae.id = ep.event_id
+{wj}
+  AND ae.action = 'blocked'
+  AND (ep.condition_category != '$exclude_condition_category'
+       OR '$exclude_condition_category' = '')
+GROUP BY ep.condition_category
+ORDER BY count DESC""",
+            grid_y=20, grid_x=8, grid_w=8,
+        ),
+        _pie(
+            "Would-Be Blocked by Condition Name",
+            f"""SELECT
+  COALESCE(ep.condition_name, 'N/A') AS condition_name,
+  COUNT(*) AS count
+FROM audit_events ae
+JOIN event_policies ep ON ae.id = ep.event_id
+{wj}
+  AND ae.action = 'blocked'
+  AND (ep.condition_name != '$exclude_condition_name'
+       OR '$exclude_condition_name' = '')
+GROUP BY ep.condition_name
+ORDER BY count DESC""",
+            grid_y=20, grid_x=16, grid_w=8,
+        ),
+
+        # ── Policy / waived / user-activity row (y=28) ────────────────────
         _table(
             "Dry-Run Policy Breakdown",
             f"""SELECT
@@ -472,43 +560,117 @@ LIMIT 20""",
   COUNT(*) AS triggered_count
 FROM audit_events ae
 JOIN event_policies ep ON ae.id = ep.event_id
-WHERE ae.is_dry_run = true AND $__timeFilter(ae.created_at)
-AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')
+{wj}
 GROUP BY ep.policy_name
 ORDER BY triggered_count DESC""",
-            grid_y=12, grid_x=12, grid_w=12,
+            grid_y=28, grid_x=0, grid_w=8,
+        ),
+        _pie(
+            "Would-Be Waived by Ecosystem",
+            f"""SELECT
+  package_type,
+  COUNT(*) AS count
+FROM audit_events
+{w_waived}
+GROUP BY package_type
+ORDER BY count DESC""",
+            grid_y=28, grid_x=8, grid_w=8,
         ),
         _table(
             "User Activity",
             f"""SELECT
   username,
   COUNT(*) AS total_events,
-  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,
-  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count
+  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked_count,
+  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count,
+  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived_count
 FROM audit_events
 {w}
 GROUP BY username
 ORDER BY total_events DESC
 LIMIT 20""",
-            grid_y=20, grid_x=0, grid_w=12,
+            grid_y=28, grid_x=16, grid_w=8,
         ),
-        _pie(
-            "Package Type Distribution",
-            f"""SELECT
+
+        # ── 12-hour window analysis (existing, pushed to y=36/44) ──────────
+        _stat(
+            "High-Persistence Users",
+            """SELECT COUNT(DISTINCT username)
+FROM (
+  SELECT username,
+    SUM(is_window_start) AS sessions
+  FROM mv_download_windows
+  WHERE is_dry_run = true AND action = 'blocked'
+    AND $__timeFilter(created_at)
+    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  GROUP BY username, package_name
+  HAVING SUM(is_window_start) >= 3
+) sub""",
+            "orange", 0, 36,
+        ),
+        _table(
+            "Persistent Blocked Packages",
+            """SELECT
+  package_name,
   package_type,
-  COUNT(*) AS count
-FROM audit_events
-{w}
-GROUP BY package_type
-ORDER BY count DESC""",
-            grid_y=20, grid_x=12,
+  username,
+  SUM(is_window_start) AS unique_sessions,
+  COUNT(*) AS total_events,
+  MIN(created_at) AS first_seen,
+  MAX(created_at) AS last_seen
+FROM mv_download_windows
+WHERE is_dry_run = true AND action = 'blocked'
+  AND $__timeFilter(created_at)
+  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+GROUP BY package_name, package_type, username
+HAVING SUM(is_window_start) > 1
+ORDER BY unique_sessions DESC
+LIMIT 20""",
+            grid_y=36, grid_x=6, grid_w=18,
+        ),
+        _timeseries(
+            "Download Sessions Over Time",
+            """SELECT
+  $__timeGroupAlias(created_at,'1d'),
+  COUNT(*) AS approved
+FROM mv_download_windows
+WHERE is_dry_run = true AND action = 'approved'
+  AND is_window_start = 1
+  AND $__timeFilter(created_at)
+  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+GROUP BY 1
+ORDER BY 1""",
+            """SELECT
+  $__timeGroupAlias(created_at,'1d'),
+  COUNT(*) AS blocked
+FROM mv_download_windows
+WHERE is_dry_run = true AND action = 'blocked'
+  AND is_window_start = 1
+  AND $__timeFilter(created_at)
+  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+GROUP BY 1
+ORDER BY 1""",
+            grid_y=44,
         ),
     ]
 
     variables = [
         _var(
             "package_type", "Package Type",
-            "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = true ORDER BY 1",
+            "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type"
+            " FROM audit_events WHERE is_dry_run = true ORDER BY 1",
+        ),
+        _var(
+            "exclude_condition_category", "Exclude Condition Category",
+            "SELECT '' AS condition_category UNION SELECT DISTINCT condition_category"
+            " FROM event_policies WHERE condition_category IS NOT NULL ORDER BY 1",
+            current={"selected": True, "text": "", "value": ""},
+        ),
+        _var(
+            "exclude_condition_name", "Exclude Condition Name",
+            "SELECT '' AS condition_name UNION SELECT DISTINCT condition_name"
+            " FROM event_policies WHERE condition_name IS NOT NULL ORDER BY 1",
+            current={"selected": True, "text": "", "value": ""},
         ),
     ]
 
