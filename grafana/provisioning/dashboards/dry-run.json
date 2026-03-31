@@ -289,7 +289,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Simulated Blocked / Approved / Waived Over Time",
+      "title": "Would Be Blocked / Approved / Waived Over Time",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -501,7 +501,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS block_count\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY block_count DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS blocked_count,\n  MAX(reason) AS last_reason\nFROM audit_events\nWHERE is_dry_run = true AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY blocked_count DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -584,7 +584,7 @@
     },
     {
       "type": "table",
-      "title": "Dry-Run Policy Breakdown",
+      "title": "Policy Breakdown",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"

@@ -471,7 +471,7 @@ def dry_run():
 
         # ── Timeseries with waived ─────────────────────────────────────────
         _timeseries(
-            "Simulated Blocked / Approved / Waived Over Time",
+            "Would Be Blocked / Approved / Waived Over Time",
             _trend_sql("true", "approved", include_repo_filter=False),
             _trend_sql("true", "blocked",  include_repo_filter=False),
             grid_y=4,
@@ -513,11 +513,12 @@ ORDER BY pct_blocked DESC""",
             f"""SELECT
   package_name,
   package_type,
-  COUNT(*) AS block_count
+  COUNT(*) AS blocked_count,
+  MAX(reason) AS last_reason
 FROM audit_events
 {w_blocked}
 GROUP BY package_name, package_type
-ORDER BY block_count DESC
+ORDER BY blocked_count DESC
 LIMIT 20""",
             grid_y=20, grid_x=0, grid_w=8,
         ),
@@ -554,7 +555,7 @@ ORDER BY count DESC""",
 
         # ── Policy / waived / user-activity row (y=28) ────────────────────
         _table(
-            "Dry-Run Policy Breakdown",
+            "Policy Breakdown",
             f"""SELECT
   ep.policy_name,
   COUNT(*) AS triggered_count
