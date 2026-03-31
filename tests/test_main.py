@@ -55,8 +55,8 @@ def test_commits_after_each_batch(monkeypatch):
         patch("etl.main.upsert_events", return_value=0),
     ):
         run()
-    # Two modes (dry_run=False, dry_run=True) → exactly 2 commits
-    assert mock_conn.commit.call_count == 2
+    # Two modes (dry_run=False, dry_run=True) → 2 commits + 1 MV refresh commit = 3 total
+    assert mock_conn.commit.call_count == 3
 
 
 def test_closes_connection_on_error(monkeypatch):
