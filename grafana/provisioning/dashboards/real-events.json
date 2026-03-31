@@ -60,7 +60,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository')",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')",
           "format": "table",
           "refId": "A"
         }
@@ -104,7 +104,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository') AND action = 'blocked'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND action = 'blocked'",
           "format": "table",
           "refId": "A"
         }
@@ -148,7 +148,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository') AND action = 'approved'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND action = 'approved'",
           "format": "table",
           "refId": "A"
         }
@@ -192,7 +192,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT package_name) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository')",
+          "rawSql": "SELECT COUNT(DISTINCT package_name) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')",
           "format": "table",
           "refId": "A"
         }
@@ -267,7 +267,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository') AND action = 'approved'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND action = 'approved'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "A"
         },
@@ -276,7 +276,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository') AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "B"
         }
@@ -309,7 +309,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS blocked_count,\n  MAX(reason) AS last_reason\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository') AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY blocked_count DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS blocked_count,\n  MAX(reason) AS last_reason\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY blocked_count DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -342,7 +342,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at)\nAND ('$package_type' = 'All' OR ae.package_type = '$package_type')\nAND ('$repository' = 'All' OR ae.curated_repository_name = '$repository')\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
+          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at)\nAND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')\nAND ('$repository' = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository')\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
           "format": "table",
           "refId": "A"
         }
@@ -375,7 +375,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository')\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -412,7 +412,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = 'All' OR package_type = '$package_type') AND ('$repository' = 'All' OR curated_repository_name = '$repository')\nGROUP BY package_type\nORDER BY count DESC",
+          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\nGROUP BY package_type\nORDER BY count DESC",
           "format": "table",
           "refId": "A"
         }
