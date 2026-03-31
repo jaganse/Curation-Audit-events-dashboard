@@ -863,14 +863,7 @@
           "type": "postgres",
           "uid": "curation_pg"
         },
-        "query": {
-          "datasource": {
-            "type": "postgres",
-            "uid": "curation_pg"
-          },
-          "rawSql": "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
-          "format": "table"
-        },
+        "query": "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         "includeAll": false,
         "multi": false,
         "refresh": 2,
@@ -889,14 +882,7 @@
           "type": "postgres",
           "uid": "curation_pg"
         },
-        "query": {
-          "datasource": {
-            "type": "postgres",
-            "uid": "curation_pg"
-          },
-          "rawSql": "SELECT 'All' AS curated_repository_name UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
-          "format": "table"
-        },
+        "query": "SELECT 'All' AS curated_repository_name UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         "includeAll": false,
         "multi": false,
         "refresh": 2,
@@ -915,14 +901,7 @@
           "type": "postgres",
           "uid": "curation_pg"
         },
-        "query": {
-          "datasource": {
-            "type": "postgres",
-            "uid": "curation_pg"
-          },
-          "rawSql": "SELECT '' AS condition_category UNION SELECT DISTINCT condition_category FROM event_policies WHERE condition_category IS NOT NULL ORDER BY 1",
-          "format": "table"
-        },
+        "query": "SELECT '' AS condition_category UNION SELECT DISTINCT condition_category FROM event_policies WHERE condition_category IS NOT NULL ORDER BY 1",
         "includeAll": false,
         "multi": false,
         "refresh": 2,
@@ -941,14 +920,7 @@
           "type": "postgres",
           "uid": "curation_pg"
         },
-        "query": {
-          "datasource": {
-            "type": "postgres",
-            "uid": "curation_pg"
-          },
-          "rawSql": "SELECT '' AS condition_name UNION SELECT DISTINCT condition_name FROM event_policies WHERE condition_name IS NOT NULL ORDER BY 1",
-          "format": "table"
-        },
+        "query": "SELECT '' AS condition_name UNION SELECT DISTINCT condition_name FROM event_policies WHERE condition_name IS NOT NULL ORDER BY 1",
         "includeAll": false,
         "multi": false,
         "refresh": 2,

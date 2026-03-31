@@ -118,7 +118,7 @@ def _var(name, label, query, current=None):
         "label": label,
         "type": "query",
         "datasource": DS_REF,
-        "query": {"datasource": DS_REF, "rawSql": query, "format": "table"},
+        "query": query,
         "includeAll": False,
         "multi": False,
         "refresh": 2,
