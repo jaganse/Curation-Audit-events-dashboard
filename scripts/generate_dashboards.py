@@ -42,7 +42,7 @@ def _timeseries(title, sql_approved, sql_blocked, grid_y, sql_waived=None):
             "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}],
         },
     ]
-    if sql_waived:
+    if sql_waived is not None:
         overrides.append({
             "matcher": {"id": "byName", "options": "waived"},
             "properties": [{"id": "color", "value": {"fixedColor": "#d29922", "mode": "fixed"}}],
@@ -51,7 +51,7 @@ def _timeseries(title, sql_approved, sql_blocked, grid_y, sql_waived=None):
         {"datasource": DS_REF, "rawSql": sql_approved, "format": "time_series", "refId": "A"},
         {"datasource": DS_REF, "rawSql": sql_blocked,  "format": "time_series", "refId": "B"},
     ]
-    if sql_waived:
+    if sql_waived is not None:
         targets.append({"datasource": DS_REF, "rawSql": sql_waived, "format": "time_series", "refId": "C"})
     return {
         "type": "timeseries",
