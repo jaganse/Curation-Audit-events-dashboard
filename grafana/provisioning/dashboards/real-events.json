@@ -418,6 +418,167 @@
         }
       ],
       "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "High-Persistence Users",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 28
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT COUNT(DISTINCT username)\nFROM (\n  SELECT username,\n    SUM(is_window_start) AS sessions\n  FROM mv_download_windows\n  WHERE is_dry_run = false AND action = 'blocked'\n    AND $__timeFilter(created_at)\n    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n    AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  GROUP BY username, package_name\n  HAVING SUM(is_window_start) >= 3\n) sub",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 10
+    },
+    {
+      "type": "table",
+      "title": "Persistent Blocked Packages",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 28
+      },
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  username,\n  SUM(is_window_start) AS unique_sessions,\n  COUNT(*) AS total_events,\n  MIN(created_at) AS first_seen,\n  MAX(created_at) AS last_seen\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'blocked'\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\nGROUP BY package_name, package_type, username\nHAVING SUM(is_window_start) > 1\nORDER BY unique_sessions DESC\nLIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "Download Sessions Over Time",
+      "datasource": {
+        "type": "postgres",
+        "uid": "curation_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "approved"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "blocked"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'approved'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\nGROUP BY 1\nORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "curation_pg"
+          },
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'blocked'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\nGROUP BY 1\nORDER BY 1",
+          "format": "time_series",
+          "refId": "B"
+        }
+      ],
+      "id": 12
     }
   ],
   "refresh": "1h",

@@ -12,12 +12,12 @@ OUT_DIR = "grafana/provisioning/dashboards"
 DS_REF = {"type": "postgres", "uid": "curation_pg"}
 
 
-def _stat(title, sql, color, grid_x, grid_y):
+def _stat(title, sql, color, grid_x, grid_y, grid_w=6):
     return {
         "type": "stat",
         "title": title,
         "datasource": DS_REF,
-        "gridPos": {"h": 4, "w": 6, "x": grid_x, "y": grid_y},
+        "gridPos": {"h": 4, "w": grid_w, "x": grid_x, "y": grid_y},
         "options": {
             "reduceOptions": {"calcs": ["lastNotNull"]},
             "colorMode": "value",
@@ -31,7 +31,28 @@ def _stat(title, sql, color, grid_x, grid_y):
     }
 
 
-def _timeseries(title, sql_approved, sql_blocked, grid_y):
+def _timeseries(title, sql_approved, sql_blocked, grid_y, sql_waived=None):
+    overrides = [
+        {
+            "matcher": {"id": "byName", "options": "approved"},
+            "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}],
+        },
+        {
+            "matcher": {"id": "byName", "options": "blocked"},
+            "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}],
+        },
+    ]
+    if sql_waived:
+        overrides.append({
+            "matcher": {"id": "byName", "options": "waived"},
+            "properties": [{"id": "color", "value": {"fixedColor": "#d29922", "mode": "fixed"}}],
+        })
+    targets = [
+        {"datasource": DS_REF, "rawSql": sql_approved, "format": "time_series", "refId": "A"},
+        {"datasource": DS_REF, "rawSql": sql_blocked,  "format": "time_series", "refId": "B"},
+    ]
+    if sql_waived:
+        targets.append({"datasource": DS_REF, "rawSql": sql_waived, "format": "time_series", "refId": "C"})
     return {
         "type": "timeseries",
         "title": title,
@@ -43,21 +64,9 @@ def _timeseries(title, sql_approved, sql_blocked, grid_y):
         },
         "fieldConfig": {
             "defaults": {"custom": {"lineWidth": 2, "fillOpacity": 10}},
-            "overrides": [
-                {
-                    "matcher": {"id": "byName", "options": "approved"},
-                    "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}],
-                },
-                {
-                    "matcher": {"id": "byName", "options": "blocked"},
-                    "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}],
-                },
-            ],
+            "overrides": overrides,
         },
-        "targets": [
-            {"datasource": DS_REF, "rawSql": sql_approved, "format": "time_series", "refId": "A"},
-            {"datasource": DS_REF, "rawSql": sql_blocked, "format": "time_series", "refId": "B"},
-        ],
+        "targets": targets,
     }
 
 
@@ -73,13 +82,29 @@ def _table(title, sql, grid_y, grid_x=0, grid_w=12):
     }
 
 
-def _pie(title, sql, grid_y, grid_x=12):
+def _pie(title, sql, grid_y, grid_x=12, grid_w=12):
     return {
         "type": "piechart",
         "title": title,
         "datasource": DS_REF,
-        "gridPos": {"h": 8, "w": 12, "x": grid_x, "y": grid_y},
+        "gridPos": {"h": 8, "w": grid_w, "x": grid_x, "y": grid_y},
         "options": {"pieType": "pie", "legend": {"displayMode": "table", "placement": "right"}},
+        "fieldConfig": {"defaults": {}, "overrides": []},
+        "targets": [{"datasource": DS_REF, "rawSql": sql, "format": "table", "refId": "A"}],
+    }
+
+
+def _barchart(title, sql, grid_y, grid_x=0, grid_w=12, orientation="auto"):
+    return {
+        "type": "barchart",
+        "title": title,
+        "datasource": DS_REF,
+        "gridPos": {"h": 8, "w": grid_w, "x": grid_x, "y": grid_y},
+        "options": {
+            "orientation": orientation,
+            "legend": {"displayMode": "list", "placement": "bottom"},
+            "tooltip": {"mode": "multi"},
+        },
         "fieldConfig": {"defaults": {}, "overrides": []},
         "targets": [{"datasource": DS_REF, "rawSql": sql, "format": "table", "refId": "A"}],
     }
@@ -223,6 +248,70 @@ FROM audit_events
 GROUP BY package_type
 ORDER BY count DESC""",
             grid_y=20, grid_x=12,
+        ),
+        # ── 12-hour window analysis ──────────────────────────────────────────
+        _stat(
+            "High-Persistence Users",
+            """SELECT COUNT(DISTINCT username)
+FROM (
+  SELECT username,
+    SUM(is_window_start) AS sessions
+  FROM mv_download_windows
+  WHERE is_dry_run = false AND action = 'blocked'
+    AND $__timeFilter(created_at)
+    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+    AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  GROUP BY username, package_name
+  HAVING SUM(is_window_start) >= 3
+) sub""",
+            "orange", 0, 28,
+        ),
+        _table(
+            "Persistent Blocked Packages",
+            """SELECT
+  package_name,
+  package_type,
+  username,
+  SUM(is_window_start) AS unique_sessions,
+  COUNT(*) AS total_events,
+  MIN(created_at) AS first_seen,
+  MAX(created_at) AS last_seen
+FROM mv_download_windows
+WHERE is_dry_run = false AND action = 'blocked'
+  AND $__timeFilter(created_at)
+  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+GROUP BY package_name, package_type, username
+HAVING SUM(is_window_start) > 1
+ORDER BY unique_sessions DESC
+LIMIT 20""",
+            grid_y=28, grid_x=6, grid_w=18,
+        ),
+        _timeseries(
+            "Download Sessions Over Time",
+            """SELECT
+  $__timeGroupAlias(created_at,'1d'),
+  COUNT(*) AS approved
+FROM mv_download_windows
+WHERE is_dry_run = false AND action = 'approved'
+  AND is_window_start = 1
+  AND $__timeFilter(created_at)
+  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+GROUP BY 1
+ORDER BY 1""",
+            """SELECT
+  $__timeGroupAlias(created_at,'1d'),
+  COUNT(*) AS blocked
+FROM mv_download_windows
+WHERE is_dry_run = false AND action = 'blocked'
+  AND is_window_start = 1
+  AND $__timeFilter(created_at)
+  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+GROUP BY 1
+ORDER BY 1""",
+            grid_y=36,
         ),
     ]
 
