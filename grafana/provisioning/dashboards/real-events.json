@@ -929,8 +929,8 @@
         "sort": 1,
         "current": {
           "selected": true,
-          "text": "All",
-          "value": "All"
+          "text": "",
+          "value": ""
         }
       },
       {
@@ -955,8 +955,8 @@
         "sort": 1,
         "current": {
           "selected": true,
-          "text": "All",
-          "value": "All"
+          "text": "",
+          "value": ""
         }
       }
     ]

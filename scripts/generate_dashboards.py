@@ -110,7 +110,9 @@ def _barchart(title, sql, grid_y, grid_x=0, grid_w=12, orientation="auto"):
     }
 
 
-def _var(name, label, query):
+def _var(name, label, query, current=None):
+    if current is None:
+        current = {"selected": True, "text": "All", "value": "All"}
     return {
         "name": name,
         "label": label,
@@ -121,7 +123,7 @@ def _var(name, label, query):
         "multi": False,
         "refresh": 2,
         "sort": 1,
-        "current": {"selected": True, "text": "All", "value": "All"},
+        "current": current,
     }
 
 
@@ -419,11 +421,13 @@ ORDER BY 1""",
             "exclude_condition_category", "Exclude Condition Category",
             "SELECT '' AS condition_category UNION SELECT DISTINCT condition_category"
             " FROM event_policies WHERE condition_category IS NOT NULL ORDER BY 1",
+            current={"selected": True, "text": "", "value": ""},
         ),
         _var(
             "exclude_condition_name", "Exclude Condition Name",
             "SELECT '' AS condition_name UNION SELECT DISTINCT condition_name"
             " FROM event_policies WHERE condition_name IS NOT NULL ORDER BY 1",
+            current={"selected": True, "text": "", "value": ""},
         ),
     ]
 
