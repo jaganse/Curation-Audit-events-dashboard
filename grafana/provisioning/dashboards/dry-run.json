@@ -69,7 +69,7 @@
     },
     {
       "type": "stat",
-      "title": "% Would Be Blocked",
+      "title": "% Would-Be Blocked",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -113,7 +113,7 @@
     },
     {
       "type": "stat",
-      "title": "Would Be Blocked",
+      "title": "Would-Be Blocked",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -157,7 +157,7 @@
     },
     {
       "type": "stat",
-      "title": "Would Be Approved",
+      "title": "Would-Be Approved",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -201,7 +201,7 @@
     },
     {
       "type": "stat",
-      "title": "Would Be Waived",
+      "title": "Would-Be Waived",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -289,7 +289,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Would Be Blocked / Approved / Waived Over Time",
+      "title": "Would-Be Blocked / Approved / Waived Over Time",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -397,7 +397,7 @@
     },
     {
       "type": "barchart",
-      "title": "Approved / Blocked / Waived by Ecosystem",
+      "title": "Would-Be Approved / Blocked / Waived by Ecosystem",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"
@@ -437,7 +437,7 @@
     },
     {
       "type": "barchart",
-      "title": "% Would Be Blocked by Ecosystem",
+      "title": "% Would-Be Blocked by Ecosystem",
       "datasource": {
         "type": "postgres",
         "uid": "curation_pg"

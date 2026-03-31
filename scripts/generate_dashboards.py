@@ -452,17 +452,17 @@ def dry_run():
         _stat("Total Dry-Run Events",
               f"SELECT COUNT(*) FROM audit_events {w}",
               "blue",    0,  0, grid_w=4),
-        _stat("% Would Be Blocked",
+        _stat("% Would-Be Blocked",
               f"SELECT ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)"
               f" / NULLIF(COUNT(*), 0), 1) AS pct_blocked FROM audit_events {w}",
               "orange",  4,  0, grid_w=4),
-        _stat("Would Be Blocked",
+        _stat("Would-Be Blocked",
               f"SELECT COUNT(*) FROM audit_events {w_blocked}",
               "red",     8,  0, grid_w=4),
-        _stat("Would Be Approved",
+        _stat("Would-Be Approved",
               f"SELECT COUNT(*) FROM audit_events {w_approved}",
               "green",   12, 0, grid_w=4),
-        _stat("Would Be Waived",
+        _stat("Would-Be Waived",
               f"SELECT COUNT(*) FROM audit_events {w_waived}",
               "#d29922", 16, 0, grid_w=4),
         _stat("Unique Packages",
@@ -471,7 +471,7 @@ def dry_run():
 
         # ── Timeseries with waived ─────────────────────────────────────────
         _timeseries(
-            "Would Be Blocked / Approved / Waived Over Time",
+            "Would-Be Blocked / Approved / Waived Over Time",
             _trend_sql("true", "approved", include_repo_filter=False),
             _trend_sql("true", "blocked",  include_repo_filter=False),
             grid_y=4,
@@ -480,7 +480,7 @@ def dry_run():
 
         # ── Ecosystem breakdown row (y=12) ─────────────────────────────────
         _barchart(
-            "Approved / Blocked / Waived by Ecosystem",
+            "Would-Be Approved / Blocked / Waived by Ecosystem",
             f"""SELECT
   package_type,
   SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved,
@@ -495,7 +495,7 @@ ORDER BY (SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END)
             grid_y=12, grid_x=0, grid_w=12,
         ),
         _barchart(
-            "% Would Be Blocked by Ecosystem",
+            "% Would-Be Blocked by Ecosystem",
             f"""SELECT
   package_type,
   ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)
