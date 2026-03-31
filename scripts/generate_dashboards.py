@@ -229,11 +229,11 @@ ORDER BY count DESC""",
     variables = [
         _var(
             "package_type", "Package Type",
-            "SELECT 'All' UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+            "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         ),
         _var(
             "repository", "Repository",
-            "SELECT 'All' UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+            "SELECT 'All' AS curated_repository_name UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         ),
     ]
 
@@ -314,7 +314,7 @@ ORDER BY count DESC""",
     variables = [
         _var(
             "package_type", "Package Type",
-            "SELECT 'All' UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = true ORDER BY 1",
+            "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = true ORDER BY 1",
         ),
     ]
 

@@ -441,7 +441,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT 'All' UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+          "rawSql": "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type FROM audit_events WHERE is_dry_run = false ORDER BY 1",
           "format": "table"
         },
         "includeAll": false,
@@ -467,7 +467,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT 'All' UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+          "rawSql": "SELECT 'All' AS curated_repository_name UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
           "format": "table"
         },
         "includeAll": false,
