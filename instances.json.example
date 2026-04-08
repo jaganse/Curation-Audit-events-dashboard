@@ -1,0 +1,4 @@
+[
+  {"name": "prod",    "url": "https://mycompany.jfrog.io",         "token": "eyJ..."},
+  {"name": "staging", "url": "https://mycompany-staging.jfrog.io", "token": "eyJ..."}
+]

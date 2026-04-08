@@ -166,14 +166,18 @@ def _dashboard(title, uid, panels, variables):
 
 # ── SQL helpers ─────────────────────────────────────────────────────────────
 
-def _where(dry_run_flag, extra_filters="", include_repo_filter=True, include_user_filter=True):
-    tf = "$__timeFilter(created_at)"
-    pt = "('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')"
-    repo = "('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')"
-    user = "('$username' = ANY(ARRAY['', 'All']) OR username = '$username')"
+def _where(dry_run_flag, extra_filters="", include_repo_filter=True, include_user_filter=True,
+           include_instance_filter=True):
+    tf       = "$__timeFilter(created_at)"
+    pt       = "('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type')"
+    repo     = "('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository')"
+    instance = "('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance')"
+    user     = "('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')"
     parts = [f"WHERE is_dry_run = {dry_run_flag}", f"AND {tf}", f"AND {pt}"]
     if include_repo_filter:
         parts.append(f"AND {repo}")
+    if include_instance_filter:
+        parts.append(f"AND {instance}")
     if include_user_filter:
         parts.append(f"AND {user}")
     if extra_filters:
@@ -202,9 +206,10 @@ def real_events():
     wj = (
         "WHERE ae.is_dry_run = false"
         " AND $__timeFilter(ae.created_at)"
-        " AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')"
-        " AND ('$repository' = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository')"
-        " AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')"
+        " AND ('$package_type'   = ANY(ARRAY['', 'All']) OR ae.package_type            = '$package_type')"
+        " AND ('$repository'     = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository')"
+        " AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR ae.jfrog_instance          = '$jfrog_instance')"
+        " AND ('$username'       = ANY(ARRAY['', 'All']) OR ae.username                = '$username')"
     )
 
     panels = [
@@ -357,7 +362,7 @@ LIMIT 20""",
                     "id": "links",
                     "value": [{
                         "title": "Drill down to user",
-                        "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-repository=${repository}&var-username=${__data.fields.username}",
+                        "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-repository=${repository}&var-jfrog_instance=${jfrog_instance}&var-username=${__data.fields.username}",
                         "targetBlank": False,
                     }],
                 }],
@@ -374,9 +379,10 @@ FROM (
   FROM mv_download_windows
   WHERE is_dry_run = false AND action = 'blocked'
     AND $__timeFilter(created_at)
-    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-    AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
-    AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
+    AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')
+    AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+    AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')
+    AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')
   GROUP BY username, package_name
   HAVING SUM(is_window_start) >= 3
 ) sub""",
@@ -388,6 +394,7 @@ FROM (
   package_name,
   package_type,
   username,
+  jfrog_instance,
   SUM(is_window_start) AS unique_sessions,
   COUNT(*) AS total_events,
   MIN(created_at) AS first_seen,
@@ -395,10 +402,11 @@ FROM (
 FROM mv_download_windows
 WHERE is_dry_run = false AND action = 'blocked'
   AND $__timeFilter(created_at)
-  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
-  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
-GROUP BY package_name, package_type, username
+  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')
+  AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')
+  AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')
+GROUP BY package_name, package_type, username, jfrog_instance
 HAVING SUM(is_window_start) > 1
 ORDER BY unique_sessions DESC
 LIMIT 20""",
@@ -413,9 +421,10 @@ FROM mv_download_windows
 WHERE is_dry_run = false AND action = 'approved'
   AND is_window_start = 1
   AND $__timeFilter(created_at)
-  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
-  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
+  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')
+  AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')
+  AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')
 GROUP BY 1
 ORDER BY 1""",
             """SELECT
@@ -425,9 +434,10 @@ FROM mv_download_windows
 WHERE is_dry_run = false AND action = 'blocked'
   AND is_window_start = 1
   AND $__timeFilter(created_at)
-  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
-  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
+  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')
+  AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')
+  AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')
 GROUP BY 1
 ORDER BY 1""",
             grid_y=44,
@@ -464,6 +474,11 @@ LIMIT 100""",
             " FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         ),
         _var(
+            "jfrog_instance", "Instance",
+            "SELECT 'All' AS jfrog_instance UNION SELECT DISTINCT jfrog_instance"
+            " FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+        ),
+        _var(
             "username", "User",
             "SELECT 'All' AS username UNION SELECT DISTINCT username"
             " FROM audit_events WHERE is_dry_run = false ORDER BY 1",
@@ -495,8 +510,9 @@ def dry_run():
     wj = (
         "WHERE ae.is_dry_run = true"
         " AND $__timeFilter(ae.created_at)"
-        " AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')"
-        " AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')"
+        " AND ('$package_type'   = ANY(ARRAY['', 'All']) OR ae.package_type   = '$package_type')"
+        " AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR ae.jfrog_instance = '$jfrog_instance')"
+        " AND ('$username'       = ANY(ARRAY['', 'All']) OR ae.username        = '$username')"
     )
 
     panels = [
@@ -649,7 +665,7 @@ LIMIT 20""",
                     "id": "links",
                     "value": [{
                         "title": "Drill down to user",
-                        "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-username=${__data.fields.username}",
+                        "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-jfrog_instance=${jfrog_instance}&var-username=${__data.fields.username}",
                         "targetBlank": False,
                     }],
                 }],
@@ -666,8 +682,9 @@ FROM (
   FROM mv_download_windows
   WHERE is_dry_run = true AND action = 'blocked'
     AND $__timeFilter(created_at)
-    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-    AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
+    AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type   = '$package_type')
+    AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance = '$jfrog_instance')
+    AND ('$username'       = ANY(ARRAY['', 'All']) OR username       = '$username')
   GROUP BY username, package_name
   HAVING SUM(is_window_start) >= 3
 ) sub""",
@@ -679,6 +696,7 @@ FROM (
   package_name,
   package_type,
   username,
+  jfrog_instance,
   SUM(is_window_start) AS unique_sessions,
   COUNT(*) AS total_events,
   MIN(created_at) AS first_seen,
@@ -686,9 +704,10 @@ FROM (
 FROM mv_download_windows
 WHERE is_dry_run = true AND action = 'blocked'
   AND $__timeFilter(created_at)
-  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
-GROUP BY package_name, package_type, username
+  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type   = '$package_type')
+  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance = '$jfrog_instance')
+  AND ('$username'       = ANY(ARRAY['', 'All']) OR username       = '$username')
+GROUP BY package_name, package_type, username, jfrog_instance
 HAVING SUM(is_window_start) > 1
 ORDER BY unique_sessions DESC
 LIMIT 20""",
@@ -703,8 +722,9 @@ FROM mv_download_windows
 WHERE is_dry_run = true AND action = 'approved'
   AND is_window_start = 1
   AND $__timeFilter(created_at)
-  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
+  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type   = '$package_type')
+  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance = '$jfrog_instance')
+  AND ('$username'       = ANY(ARRAY['', 'All']) OR username       = '$username')
 GROUP BY 1
 ORDER BY 1""",
             """SELECT
@@ -714,8 +734,9 @@ FROM mv_download_windows
 WHERE is_dry_run = true AND action = 'blocked'
   AND is_window_start = 1
   AND $__timeFilter(created_at)
-  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
-  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
+  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type   = '$package_type')
+  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance = '$jfrog_instance')
+  AND ('$username'       = ANY(ARRAY['', 'All']) OR username       = '$username')
 GROUP BY 1
 ORDER BY 1""",
             grid_y=44,
@@ -744,6 +765,11 @@ LIMIT 100""",
         _var(
             "package_type", "Package Type",
             "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type"
+            " FROM audit_events WHERE is_dry_run = true ORDER BY 1",
+        ),
+        _var(
+            "jfrog_instance", "Instance",
+            "SELECT 'All' AS jfrog_instance UNION SELECT DISTINCT jfrog_instance"
             " FROM audit_events WHERE is_dry_run = true ORDER BY 1",
         ),
         _var(

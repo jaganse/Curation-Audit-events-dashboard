@@ -36,6 +36,8 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://audit:audit@postgres:5432/audit
+    volumes:
+      - ./instances.json:/app/instances.json:ro
     depends_on:
       postgres:
         condition: service_healthy

@@ -8,13 +8,13 @@ from psycopg2.extras import execute_values
 
 _UPSERT_SQL = """
 INSERT INTO audit_events (
-    id, created_at, action, is_dry_run, package_type, package_name, package_version,
-    package_url, reason, event_origin, curated_repository_name,
+    id, jfrog_instance, created_at, action, is_dry_run, package_type, package_name,
+    package_version, package_url, reason, event_origin, curated_repository_name,
     curated_repository_server_name, curated_project, username, user_mail,
     origin_repository_name, origin_repository_server_name, origin_project,
     public_repo_url, public_repo_name
 ) VALUES %s
-ON CONFLICT (id) DO UPDATE SET
+ON CONFLICT (id, jfrog_instance) DO UPDATE SET
     action                         = EXCLUDED.action,
     reason                         = EXCLUDED.reason,
     username                       = EXCLUDED.username,
@@ -35,34 +35,35 @@ ON CONFLICT (id) DO UPDATE SET
     -- is_dry_run intentionally excluded: dry-run status is immutable once written
 """
 
-_DELETE_POLICIES = "DELETE FROM event_policies WHERE event_id = %s"
+_DELETE_POLICIES = "DELETE FROM event_policies WHERE event_id = %s AND jfrog_instance = %s"
 
 _INSERT_POLICIES = """
-INSERT INTO event_policies (event_id, policy_name, rule_name, policy_action, cve_id, severity,
-                            condition_name, condition_category)
+INSERT INTO event_policies (event_id, jfrog_instance, policy_name, rule_name, policy_action,
+                            cve_id, severity, condition_name, condition_category)
 VALUES %s
 """
 
 
-def upsert_events(conn, events: list, is_dry_run: bool) -> int:
+def upsert_events(conn, events: list, is_dry_run: bool, jfrog_instance: str) -> int:
     """Upsert a list of API event dicts into audit_events. Returns count processed."""
     if not events:
         return 0
-    rows = [_event_row(e, is_dry_run) for e in events]
+    rows = [_event_row(e, is_dry_run, jfrog_instance) for e in events]
     with conn.cursor() as cur:
         execute_values(cur, _UPSERT_SQL, rows)
     return len(rows)
 
 
-def upsert_policies(conn, event_id: int, policies: list) -> int:
+def upsert_policies(conn, event_id: int, policies: list, jfrog_instance: str) -> int:
     """Replace all policy rows for an event. Returns count inserted."""
     with conn.cursor() as cur:
-        cur.execute(_DELETE_POLICIES, (event_id,))
+        cur.execute(_DELETE_POLICIES, (event_id, jfrog_instance))
     if not policies:
         return 0
     rows = [
         (
             event_id,
+            jfrog_instance,
             p.get("policy_name") or p.get("name"),
             p.get("rule_name") or p.get("rule"),
             p.get("policy_action") or p.get("action"),
@@ -78,9 +79,10 @@ def upsert_policies(conn, event_id: int, policies: list) -> int:
     return len(rows)
 
 
-def _event_row(event: dict, is_dry_run: bool) -> tuple:
+def _event_row(event: dict, is_dry_run: bool, jfrog_instance: str) -> tuple:
     return (
         event["id"],
+        jfrog_instance,
         event["created_at"],
         event.get("action"),
         is_dry_run,

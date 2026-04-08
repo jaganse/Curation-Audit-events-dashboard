@@ -8,6 +8,7 @@ from etl.storage import upsert_events, upsert_policies
 DB_URL = os.environ.get("DATABASE_URL", "postgresql://audit:audit@localhost:5432/audit")
 
 TEST_ID_BASE = 9_999_000
+TEST_INSTANCE = "test-instance"
 
 
 @pytest.fixture
@@ -51,38 +52,60 @@ def _event(seq=1, package_name="test-lodash", action="approved"):
 
 
 def test_upsert_inserts(conn):
-    count = upsert_events(conn, [_event(1)], is_dry_run=False)
+    count = upsert_events(conn, [_event(1)], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     assert count == 1
     conn.commit()
     with conn.cursor() as cur:
-        cur.execute("SELECT action, is_dry_run FROM audit_events WHERE id = %s", (TEST_ID_BASE + 1,))
+        cur.execute(
+            "SELECT action, is_dry_run FROM audit_events WHERE id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 1, TEST_INSTANCE),
+        )
         assert cur.fetchone() == ("approved", False)
 
 
 def test_upsert_idempotent(conn):
-    upsert_events(conn, [_event(2)], is_dry_run=False)
+    upsert_events(conn, [_event(2)], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     conn.commit()
-    upsert_events(conn, [_event(2)], is_dry_run=False)
+    upsert_events(conn, [_event(2)], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     conn.commit()
     with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM audit_events WHERE id = %s", (TEST_ID_BASE + 2,))
+        cur.execute(
+            "SELECT COUNT(*) FROM audit_events WHERE id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 2, TEST_INSTANCE),
+        )
         assert cur.fetchone()[0] == 1
 
 
+def test_upsert_same_id_different_instances(conn):
+    """Same API event id from two different instances should produce two rows."""
+    upsert_events(conn, [_event(3)], is_dry_run=False, jfrog_instance="instance-a")
+    upsert_events(conn, [_event(3)], is_dry_run=False, jfrog_instance="instance-b")
+    conn.commit()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) FROM audit_events WHERE id = %s",
+            (TEST_ID_BASE + 3,),
+        )
+        assert cur.fetchone()[0] == 2
+
+
 def test_upsert_empty(conn):
-    assert upsert_events(conn, [], is_dry_run=False) == 0
+    assert upsert_events(conn, [], is_dry_run=False, jfrog_instance=TEST_INSTANCE) == 0
 
 
 def test_upsert_sets_dry_run_flag(conn):
-    upsert_events(conn, [_event(3, package_name="test-dry")], is_dry_run=True)
+    upsert_events(conn, [_event(4, package_name="test-dry")], is_dry_run=True, jfrog_instance=TEST_INSTANCE)
     conn.commit()
     with conn.cursor() as cur:
-        cur.execute("SELECT is_dry_run FROM audit_events WHERE id = %s", (TEST_ID_BASE + 3,))
+        cur.execute(
+            "SELECT is_dry_run FROM audit_events WHERE id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 4, TEST_INSTANCE),
+        )
         assert cur.fetchone()[0] is True
 
 
 def test_policies_inserts(conn):
-    upsert_events(conn, [_event(4, package_name="test-blocked", action="blocked")], is_dry_run=False)
+    upsert_events(conn, [_event(5, package_name="test-blocked", action="blocked")], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     conn.commit()
     policies = [
         {
@@ -93,37 +116,40 @@ def test_policies_inserts(conn):
             "severity": "CRITICAL",
         }
     ]
-    count = upsert_policies(conn, TEST_ID_BASE + 4, policies)
+    count = upsert_policies(conn, TEST_ID_BASE + 5, policies, TEST_INSTANCE)
     assert count == 1
     conn.commit()
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT policy_name, severity FROM event_policies WHERE event_id = %s",
-            (TEST_ID_BASE + 4,),
+            "SELECT policy_name, severity FROM event_policies WHERE event_id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 5, TEST_INSTANCE),
         )
         assert cur.fetchone() == ("security-policy", "CRITICAL")
 
 
 def test_policies_replaces_existing(conn):
-    upsert_events(conn, [_event(5, package_name="test-replace", action="blocked")], is_dry_run=False)
+    upsert_events(conn, [_event(6, package_name="test-replace", action="blocked")], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     conn.commit()
-    upsert_policies(conn, TEST_ID_BASE + 5, [{"policy_name": "old", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}])
+    upsert_policies(conn, TEST_ID_BASE + 6, [{"policy_name": "old", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}], TEST_INSTANCE)
     conn.commit()
-    upsert_policies(conn, TEST_ID_BASE + 5, [{"policy_name": "new", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}])
+    upsert_policies(conn, TEST_ID_BASE + 6, [{"policy_name": "new", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}], TEST_INSTANCE)
     conn.commit()
     with conn.cursor() as cur:
-        cur.execute("SELECT policy_name FROM event_policies WHERE event_id = %s", (TEST_ID_BASE + 5,))
+        cur.execute(
+            "SELECT policy_name FROM event_policies WHERE event_id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 6, TEST_INSTANCE),
+        )
         rows = [r[0] for r in cur.fetchall()]
     assert rows == ["new"]
 
 
 def test_policies_empty(conn):
-    upsert_events(conn, [_event(6, package_name="test-nopol")], is_dry_run=False)
-    assert upsert_policies(conn, TEST_ID_BASE + 6, []) == 0
+    upsert_events(conn, [_event(7, package_name="test-nopol")], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
+    assert upsert_policies(conn, TEST_ID_BASE + 7, [], TEST_INSTANCE) == 0
 
 
 def test_policies_condition_fields_stored(conn):
-    upsert_events(conn, [_event(7, package_name="test-cond", action="blocked")], is_dry_run=False)
+    upsert_events(conn, [_event(8, package_name="test-cond", action="blocked")], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     conn.commit()
     policies = [
         {
@@ -136,26 +162,26 @@ def test_policies_condition_fields_stored(conn):
             "condition_category": "security",
         }
     ]
-    upsert_policies(conn, TEST_ID_BASE + 7, policies)
+    upsert_policies(conn, TEST_ID_BASE + 8, policies, TEST_INSTANCE)
     conn.commit()
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT condition_name, condition_category FROM event_policies WHERE event_id = %s",
-            (TEST_ID_BASE + 7,),
+            "SELECT condition_name, condition_category FROM event_policies WHERE event_id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 8, TEST_INSTANCE),
         )
         assert cur.fetchone() == ("cve-condition", "security")
 
 
 def test_policies_condition_fields_nullable(conn):
-    upsert_events(conn, [_event(8, package_name="test-nocond", action="blocked")], is_dry_run=False)
+    upsert_events(conn, [_event(9, package_name="test-nocond", action="blocked")], is_dry_run=False, jfrog_instance=TEST_INSTANCE)
     conn.commit()
     policies = [{"policy_name": "p", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}]
-    upsert_policies(conn, TEST_ID_BASE + 8, policies)
+    upsert_policies(conn, TEST_ID_BASE + 9, policies, TEST_INSTANCE)
     conn.commit()
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT condition_name, condition_category FROM event_policies WHERE event_id = %s",
-            (TEST_ID_BASE + 8,),
+            "SELECT condition_name, condition_category FROM event_policies WHERE event_id = %s AND jfrog_instance = %s",
+            (TEST_ID_BASE + 9, TEST_INSTANCE),
         )
         row = cur.fetchone()
     assert row == (None, None)

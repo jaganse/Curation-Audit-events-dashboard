@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS audit_events (
-    id                             BIGINT PRIMARY KEY,
+    id                             BIGINT NOT NULL,
+    jfrog_instance                 VARCHAR(100) NOT NULL,
     created_at                     TIMESTAMPTZ NOT NULL,
     action                         VARCHAR(20),
     is_dry_run                     BOOLEAN NOT NULL DEFAULT FALSE,
@@ -18,40 +19,43 @@ CREATE TABLE IF NOT EXISTS audit_events (
     origin_repository_server_name  VARCHAR(255),
     origin_project                 VARCHAR(255),
     public_repo_url                TEXT,
-    public_repo_name               VARCHAR(255)
+    public_repo_name               VARCHAR(255),
+    PRIMARY KEY (id, jfrog_instance)
 );
 
-CREATE INDEX IF NOT EXISTS idx_audit_events_created_at   ON audit_events (created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_events_action        ON audit_events (action);
-CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run    ON audit_events (is_dry_run);
-CREATE INDEX IF NOT EXISTS idx_audit_events_package_type  ON audit_events (package_type);
-CREATE INDEX IF NOT EXISTS idx_audit_events_username      ON audit_events (username);
+CREATE INDEX IF NOT EXISTS idx_audit_events_created_at    ON audit_events (created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_events_action         ON audit_events (action);
+CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run     ON audit_events (is_dry_run);
+CREATE INDEX IF NOT EXISTS idx_audit_events_package_type   ON audit_events (package_type);
+CREATE INDEX IF NOT EXISTS idx_audit_events_username       ON audit_events (username);
+CREATE INDEX IF NOT EXISTS idx_audit_events_jfrog_instance ON audit_events (jfrog_instance);
 CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run_created_at ON audit_events (is_dry_run, created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_events_is_dry_run_action_created_at ON audit_events (is_dry_run, action, created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_events_curated_repository_name ON audit_events (curated_repository_name);
 
 CREATE TABLE IF NOT EXISTS event_policies (
     id                 SERIAL PRIMARY KEY,
-    event_id           BIGINT NOT NULL REFERENCES audit_events(id) ON DELETE CASCADE,
+    event_id           BIGINT NOT NULL,
+    jfrog_instance     VARCHAR(100) NOT NULL,
     policy_name        VARCHAR(255),
     rule_name          VARCHAR(255),
     policy_action      VARCHAR(50),
     cve_id             VARCHAR(50),
     severity           VARCHAR(20),
     condition_name     VARCHAR(255),
-    condition_category VARCHAR(100)
+    condition_category VARCHAR(100),
+    FOREIGN KEY (event_id, jfrog_instance) REFERENCES audit_events (id, jfrog_instance) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_event_policies_event_id    ON event_policies (event_id);
+CREATE INDEX IF NOT EXISTS idx_event_policies_event_id    ON event_policies (event_id, jfrog_instance);
 CREATE INDEX IF NOT EXISTS idx_event_policies_policy_name ON event_policies (policy_name);
 
 -- =============================================================================
 -- mv_download_windows
 --
--- Implements a 12-hour session window count per (is_dry_run, user, package,
--- version, action). A new window is counted each time an event occurs >= 12h
--- after the immediately preceding event in the same group (sorted by
--- created_at).
+-- Implements a 12-hour session window count per (is_dry_run, jfrog_instance,
+-- user, package, version, action). A new window is counted each time an event
+-- occurs >= 12h after the immediately preceding event in the same group.
 --
 -- This is a gap-from-previous approximation of the greedy window sweep in
 -- GetAuditTimeWindow.py. It is exact when events are spaced >= 12h apart and
@@ -60,12 +64,13 @@ CREATE INDEX IF NOT EXISTS idx_event_policies_policy_name ON event_policies (pol
 -- For the "persistence of behavior" use case this approximation is accurate.
 --
 -- Refreshed after each ETL run via REFRESH MATERIALIZED VIEW CONCURRENTLY.
--- The unique index on event_id is required for CONCURRENTLY refresh.
+-- The unique index on (event_id, jfrog_instance) is required for CONCURRENTLY.
 -- =============================================================================
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_download_windows AS
 WITH ranked AS (
     SELECT
         ae.id                      AS event_id,
+        ae.jfrog_instance,
         ae.created_at,
         ae.is_dry_run,
         ae.action,
@@ -76,6 +81,7 @@ WITH ranked AS (
         ae.curated_repository_name,
         LAG(ae.created_at) OVER (
             PARTITION BY ae.is_dry_run,
+                         ae.jfrog_instance,
                          ae.username,
                          ae.package_name,
                          ae.package_version,
@@ -87,6 +93,7 @@ WITH ranked AS (
 windowed AS (
     SELECT
         event_id,
+        jfrog_instance,
         created_at,
         is_dry_run,
         action,
@@ -105,6 +112,7 @@ windowed AS (
 )
 SELECT
     event_id,
+    jfrog_instance,
     created_at,
     is_dry_run,
     action,
@@ -116,6 +124,7 @@ SELECT
     is_window_start,
     SUM(is_window_start) OVER (
         PARTITION BY is_dry_run,
+                     jfrog_instance,
                      username,
                      package_name,
                      package_version,
@@ -127,8 +136,8 @@ FROM windowed
 WITH DATA;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_download_windows_event_id
-    ON mv_download_windows (event_id);
+    ON mv_download_windows (event_id, jfrog_instance);
 CREATE INDEX IF NOT EXISTS idx_mv_dw_user_pkg
-    ON mv_download_windows (is_dry_run, username, package_name, package_version);
+    ON mv_download_windows (is_dry_run, jfrog_instance, username, package_name, package_version);
 CREATE INDEX IF NOT EXISTS idx_mv_dw_action_created_at
     ON mv_download_windows (is_dry_run, action, created_at);

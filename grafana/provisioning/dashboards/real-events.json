@@ -60,7 +60,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')",
           "format": "table",
           "refId": "A"
         }
@@ -104,7 +104,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS pct_blocked FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')",
+          "rawSql": "SELECT ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS pct_blocked FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')",
           "format": "table",
           "refId": "A"
         }
@@ -148,7 +148,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'blocked'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'blocked'",
           "format": "table",
           "refId": "A"
         }
@@ -192,7 +192,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'approved'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'approved'",
           "format": "table",
           "refId": "A"
         }
@@ -236,7 +236,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'waived'",
+          "rawSql": "SELECT COUNT(*) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'waived'",
           "format": "table",
           "refId": "A"
         }
@@ -280,7 +280,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT package_name) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')",
+          "rawSql": "SELECT COUNT(DISTINCT package_name) FROM audit_events WHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')",
           "format": "table",
           "refId": "A"
         }
@@ -370,7 +370,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'approved'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'approved'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "A"
         },
@@ -379,7 +379,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'blocked'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "B"
         },
@@ -388,7 +388,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS waived\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'waived'\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS waived\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'waived'\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "C"
         }
@@ -428,7 +428,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_type,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved,\n  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked,\n  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nGROUP BY package_type\nORDER BY (SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END)\n        + SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END)\n        + SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END)) DESC",
+          "rawSql": "SELECT\n  package_type,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved,\n  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked,\n  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')\nGROUP BY package_type\nORDER BY (SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END)\n        + SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END)\n        + SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END)) DESC",
           "format": "table",
           "refId": "A"
         }
@@ -468,7 +468,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_type,\n  ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)\n        / NULLIF(COUNT(*), 0), 1) AS pct_blocked\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nGROUP BY package_type\nORDER BY pct_blocked DESC",
+          "rawSql": "SELECT\n  package_type,\n  ROUND(100.0 * SUM(CASE WHEN action = 'blocked' THEN 1 ELSE 0 END)\n        / NULLIF(COUNT(*), 0), 1) AS pct_blocked\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')\nGROUP BY package_type\nORDER BY pct_blocked DESC",
           "format": "table",
           "refId": "A"
         }
@@ -501,7 +501,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS blocked_count,\n  MAX(reason) AS last_reason\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY blocked_count DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  COUNT(*) AS blocked_count,\n  MAX(reason) AS last_reason\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'blocked'\nGROUP BY package_name, package_type\nORDER BY blocked_count DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -550,7 +550,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  COALESCE(ep.condition_category, 'N/A') AS condition_category,\n  COUNT(*) AS count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')\n  AND ae.action = 'blocked'\n  AND (ep.condition_category != '$exclude_condition_category'\n       OR '$exclude_condition_category' = '')\nGROUP BY ep.condition_category\nORDER BY count DESC",
+          "rawSql": "SELECT\n  COALESCE(ep.condition_category, 'N/A') AS condition_category,\n  COUNT(*) AS count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at) AND ('$package_type'   = ANY(ARRAY['', 'All']) OR ae.package_type            = '$package_type') AND ('$repository'     = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository') AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR ae.jfrog_instance          = '$jfrog_instance') AND ('$username'       = ANY(ARRAY['', 'All']) OR ae.username                = '$username')\n  AND ae.action = 'blocked'\n  AND (ep.condition_category != '$exclude_condition_category'\n       OR '$exclude_condition_category' = '')\nGROUP BY ep.condition_category\nORDER BY count DESC",
           "format": "table",
           "refId": "A"
         }
@@ -599,7 +599,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  COALESCE(ep.condition_name, 'N/A') AS condition_name,\n  COUNT(*) AS count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')\n  AND ae.action = 'blocked'\n  AND (ep.condition_name != '$exclude_condition_name'\n       OR '$exclude_condition_name' = '')\nGROUP BY ep.condition_name\nORDER BY count DESC",
+          "rawSql": "SELECT\n  COALESCE(ep.condition_name, 'N/A') AS condition_name,\n  COUNT(*) AS count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at) AND ('$package_type'   = ANY(ARRAY['', 'All']) OR ae.package_type            = '$package_type') AND ('$repository'     = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository') AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR ae.jfrog_instance          = '$jfrog_instance') AND ('$username'       = ANY(ARRAY['', 'All']) OR ae.username                = '$username')\n  AND ae.action = 'blocked'\n  AND (ep.condition_name != '$exclude_condition_name'\n       OR '$exclude_condition_name' = '')\nGROUP BY ep.condition_name\nORDER BY count DESC",
           "format": "table",
           "refId": "A"
         }
@@ -632,7 +632,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
+          "rawSql": "SELECT\n  ep.policy_name,\n  COUNT(*) AS triggered_count\nFROM audit_events ae\nJOIN event_policies ep ON ae.id = ep.event_id\nWHERE ae.is_dry_run = false AND $__timeFilter(ae.created_at) AND ('$package_type'   = ANY(ARRAY['', 'All']) OR ae.package_type            = '$package_type') AND ('$repository'     = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository') AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR ae.jfrog_instance          = '$jfrog_instance') AND ('$username'       = ANY(ARRAY['', 'All']) OR ae.username                = '$username')\nGROUP BY ep.policy_name\nORDER BY triggered_count DESC",
           "format": "table",
           "refId": "A"
         }
@@ -681,7 +681,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username') AND action = 'waived'\nGROUP BY package_type\nORDER BY count DESC",
+          "rawSql": "SELECT\n  package_type,\n  COUNT(*) AS count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username') AND action = 'waived'\nGROUP BY package_type\nORDER BY count DESC",
           "format": "table",
           "refId": "A"
         }
@@ -718,7 +718,7 @@
                 "value": [
                   {
                     "title": "Drill down to user",
-                    "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-repository=${repository}&var-username=${__data.fields.username}",
+                    "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-repository=${repository}&var-jfrog_instance=${jfrog_instance}&var-username=${__data.fields.username}",
                     "targetBlank": false
                   }
                 ]
@@ -733,7 +733,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived_count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  username,\n  COUNT(*) AS total_events,\n  SUM(CASE WHEN action = 'blocked'  THEN 1 ELSE 0 END) AS blocked_count,\n  SUM(CASE WHEN action = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n  SUM(CASE WHEN action = 'waived'   THEN 1 ELSE 0 END) AS waived_count\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')\nGROUP BY username\nORDER BY total_events DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -777,7 +777,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT username)\nFROM (\n  SELECT username,\n    SUM(is_window_start) AS sessions\n  FROM mv_download_windows\n  WHERE is_dry_run = false AND action = 'blocked'\n    AND $__timeFilter(created_at)\n    AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n    AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n    AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\n  GROUP BY username, package_name\n  HAVING SUM(is_window_start) >= 3\n) sub",
+          "rawSql": "SELECT COUNT(DISTINCT username)\nFROM (\n  SELECT username,\n    SUM(is_window_start) AS sessions\n  FROM mv_download_windows\n  WHERE is_dry_run = false AND action = 'blocked'\n    AND $__timeFilter(created_at)\n    AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')\n    AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n    AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')\n    AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')\n  GROUP BY username, package_name\n  HAVING SUM(is_window_start) >= 3\n) sub",
           "format": "table",
           "refId": "A"
         }
@@ -810,7 +810,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  package_name,\n  package_type,\n  username,\n  SUM(is_window_start) AS unique_sessions,\n  COUNT(*) AS total_events,\n  MIN(created_at) AS first_seen,\n  MAX(created_at) AS last_seen\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'blocked'\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nGROUP BY package_name, package_type, username\nHAVING SUM(is_window_start) > 1\nORDER BY unique_sessions DESC\nLIMIT 20",
+          "rawSql": "SELECT\n  package_name,\n  package_type,\n  username,\n  jfrog_instance,\n  SUM(is_window_start) AS unique_sessions,\n  COUNT(*) AS total_events,\n  MIN(created_at) AS first_seen,\n  MAX(created_at) AS last_seen\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'blocked'\n  AND $__timeFilter(created_at)\n  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')\n  AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')\n  AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')\nGROUP BY package_name, package_type, username, jfrog_instance\nHAVING SUM(is_window_start) > 1\nORDER BY unique_sessions DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -885,7 +885,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'approved'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS approved\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'approved'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')\n  AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')\n  AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "A"
         },
@@ -894,7 +894,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'blocked'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')\n  AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(created_at,'1d'),\n  COUNT(*) AS blocked\nFROM mv_download_windows\nWHERE is_dry_run = false AND action = 'blocked'\n  AND is_window_start = 1\n  AND $__timeFilter(created_at)\n  AND ('$package_type'   = ANY(ARRAY['', 'All']) OR package_type            = '$package_type')\n  AND ('$repository'     = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')\n  AND ('$jfrog_instance' = ANY(ARRAY['', 'All']) OR jfrog_instance          = '$jfrog_instance')\n  AND ('$username'       = ANY(ARRAY['', 'All']) OR username                = '$username')\nGROUP BY 1\nORDER BY 1",
           "format": "time_series",
           "refId": "B"
         }
@@ -927,7 +927,7 @@
             "type": "postgres",
             "uid": "curation_pg"
           },
-          "rawSql": "SELECT\n  created_at,\n  action,\n  package_name,\n  package_type,\n  package_version,\n  reason,\n  curated_repository_name\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type') AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository') AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')\nORDER BY created_at DESC\nLIMIT 100",
+          "rawSql": "SELECT\n  created_at,\n  action,\n  package_name,\n  package_type,\n  package_version,\n  reason,\n  curated_repository_name\nFROM audit_events\nWHERE is_dry_run = false AND $__timeFilter(created_at) AND ('$package_type'    = ANY(ARRAY['', 'All']) OR package_type             = '$package_type') AND ('$repository'      = ANY(ARRAY['', 'All']) OR curated_repository_name  = '$repository') AND ('$jfrog_instance'  = ANY(ARRAY['', 'All']) OR jfrog_instance           = '$jfrog_instance') AND ('$username'        = ANY(ARRAY['', 'All']) OR username                 = '$username')\nORDER BY created_at DESC\nLIMIT 100",
           "format": "table",
           "refId": "A"
         }
@@ -971,6 +971,25 @@
           "uid": "curation_pg"
         },
         "query": "SELECT 'All' AS curated_repository_name UNION SELECT DISTINCT curated_repository_name FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+        "includeAll": false,
+        "multi": false,
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "All"
+        }
+      },
+      {
+        "name": "jfrog_instance",
+        "label": "Instance",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "curation_pg"
+        },
+        "query": "SELECT 'All' AS jfrog_instance UNION SELECT DISTINCT jfrog_instance FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         "includeAll": false,
         "multi": false,
         "refresh": 2,
