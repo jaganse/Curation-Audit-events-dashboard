@@ -21,24 +21,39 @@ No Python, Node, or Grafana CLI needed on the host.
 # 1. Clone the repository
 git clone <repo-url> && cd <repo-dir>
 
-# 2. Configure credentials
-cp .env.example .env
-# Edit .env — set JFROG_URL and JFROG_TOKEN (required)
+# 2. Configure your JFrog instance(s)
+cp instances.json.example instances.json
+# Edit instances.json — add one entry per Artifactory instance (name, url, token)
 
-# 3. Start the database and Grafana UI
+# 3. (Optional) Configure Grafana password and lookback window
+cp .env.example .env
+# Edit .env — set GRAFANA_ADMIN_PASSWORD and LOOKBACK_DAYS as needed
+
+# 4. Start the database and Grafana UI
 docker compose up -d postgres grafana
 
-# 4. Load audit data
+# 5. Load audit data
 docker compose --profile etl run --rm etl
 
-# 5. Open the dashboard
+# 6. Open the dashboard
 open http://localhost:3000   # macOS
 # or navigate to http://localhost:3000 in any browser
 ```
 
 Log in with username `admin` and the password set in `GRAFANA_ADMIN_PASSWORD` (default: `admin`). Dashboards are under the **Curation Audit** folder.
 
-> **Why are steps 3 and 4 separate?** The database and UI start once and persist across restarts. The ETL is a one-shot job — run it on demand or schedule it as a cron job. This keeps the always-on services independent from the periodic data fetch.
+> **Why are steps 4 and 5 separate?** The database and UI start once and persist across restarts. The ETL is a one-shot job — run it on demand or schedule it as a cron job. This keeps the always-on services independent from the periodic data fetch.
+
+### Single-instance fallback
+
+If you only have one Artifactory instance and prefer environment variables, skip `instances.json` and set these in `.env` instead:
+
+```
+JFROG_URL=https://mycompany.jfrog.io
+JFROG_TOKEN=eyJ...
+```
+
+The ETL detects the absence of `instances.json` and falls back automatically, using the URL hostname as the instance name.
 
 ---
 
@@ -59,18 +74,21 @@ Reports on actual enforcement decisions (packages that were blocked, approved, o
 | Blocked by Condition Name | Pie — specific policy rule names |
 | Policy Breakdown | Table of which policies triggered which blocks |
 | Waived by Ecosystem | Packages waived per ecosystem |
-| User Activity | Per-user breakdown of approved / blocked / waived events |
+| User Activity | Per-user breakdown of approved / blocked / waived events — click a username to drill down |
 | High-Persistence Users | Users who tried to download the same blocked package across 3+ separate sessions |
 | Persistent Blocked Packages | Packages blocked in more than one 12-hour session window |
 | Download Sessions Over Time | New download session starts per day |
+| User Events Log | Full event-by-event log for the selected user (last 100 events) |
 
-**Filters:** Package Type, Repository, Exclude Condition Category, Exclude Condition Name, and the Grafana time range picker.
+**Filters:** Instance, Package Type, Repository, User, Exclude Condition Category, Exclude Condition Name, and the Grafana time range picker.
+
+**User drill-down:** Select a user from the **User** dropdown (or click a row in the User Activity table) to filter every panel to that user's events. The User Events Log at the bottom shows their full individual event history.
 
 ### Curation Audit — Dry Run
 
 Mirrors the Real Events dashboard but for policy simulation mode (`is_dry_run = true`). Shows what _would_ have been blocked if Curation were enforced — without affecting actual downloads. Useful for validating a new policy before enabling enforcement.
 
-All panels are structurally identical to Real Events. Titles use the "Would-Be…" prefix to distinguish simulated from enforced outcomes.
+All panels are structurally identical to Real Events. Titles use the "Would-Be…" prefix to distinguish simulated from enforced outcomes. The same Instance and User filters apply.
 
 ---
 
@@ -115,7 +133,7 @@ Docker Compose automatically merges this file — no `-f` flags needed. Then acc
 
 Event data and Grafana settings persist in named Docker volumes across restarts.
 
-**Full reset** (wipes all data and Grafana state):
+**Full reset** (wipes all data and Grafana state — also required after schema changes such as adding multi-instance support):
 ```bash
 docker compose down -v
 docker compose up -d postgres grafana
@@ -134,8 +152,9 @@ docker compose --profile etl run --rm etl
 
 | Symptom | Cause and fix |
 |---|---|
-| ETL exits with authentication error | `JFROG_URL` or `JFROG_TOKEN` not set correctly in `.env` |
-| ETL exits with 400 Bad Request | Check that `JFROG_URL` has no trailing slash and the token has Curation read scope |
+| ETL exits with authentication error | `url` or `token` wrong in `instances.json`; or `JFROG_URL`/`JFROG_TOKEN` not set in `.env` (fallback mode) |
+| ETL exits with 400 Bad Request | Check that the instance URL has no trailing slash and the token has Curation read scope |
+| ETL ignores `instances.json` | File not found — ensure it is in the project root (same directory as `docker-compose.yml`) |
 | Grafana shows "No data" on all panels | ETL has not run yet — execute step 4 |
 | Grafana variable dropdowns show errors | ETL has not run yet; or run `docker compose restart grafana` after first ETL load |
 | Port already in use | See Port Customization above |
