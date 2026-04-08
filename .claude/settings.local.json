@@ -19,7 +19,10 @@
       "Read(//opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/bin/**)",
       "Read(//Users/jagans/.venv/bin/**)",
       "Bash(curl:*)",
-      "Bash(DATABASE_URL=\"postgresql://audit:audit@localhost:5432/audit\" python -m pytest /Users/jagans/Documents/LAB/Curation-Audit-events-dashboard/tests/ -v 2>&1)"
+      "Bash(DATABASE_URL=\"postgresql://audit:audit@localhost:5432/audit\" python -m pytest /Users/jagans/Documents/LAB/Curation-Audit-events-dashboard/tests/ -v 2>&1)",
+      "Bash(sed -n '435,512p' /Users/jagans/Documents/LAB/Curation-Audit-events-dashboard/scripts/generate_dashboards.py)",
+      "Read(//private/tmp/**)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

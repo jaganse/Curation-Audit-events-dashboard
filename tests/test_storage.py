@@ -120,3 +120,42 @@ def test_policies_replaces_existing(conn):
 def test_policies_empty(conn):
     upsert_events(conn, [_event(6, package_name="test-nopol")], is_dry_run=False)
     assert upsert_policies(conn, TEST_ID_BASE + 6, []) == 0
+
+
+def test_policies_condition_fields_stored(conn):
+    upsert_events(conn, [_event(7, package_name="test-cond", action="blocked")], is_dry_run=False)
+    conn.commit()
+    policies = [
+        {
+            "policy_name": "sec-policy",
+            "rule_name": "cve-rule",
+            "policy_action": "block",
+            "cve_id": None,
+            "severity": "HIGH",
+            "condition_name": "cve-condition",
+            "condition_category": "security",
+        }
+    ]
+    upsert_policies(conn, TEST_ID_BASE + 7, policies)
+    conn.commit()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT condition_name, condition_category FROM event_policies WHERE event_id = %s",
+            (TEST_ID_BASE + 7,),
+        )
+        assert cur.fetchone() == ("cve-condition", "security")
+
+
+def test_policies_condition_fields_nullable(conn):
+    upsert_events(conn, [_event(8, package_name="test-nocond", action="blocked")], is_dry_run=False)
+    conn.commit()
+    policies = [{"policy_name": "p", "rule_name": "r", "policy_action": "block", "cve_id": None, "severity": None}]
+    upsert_policies(conn, TEST_ID_BASE + 8, policies)
+    conn.commit()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT condition_name, condition_category FROM event_policies WHERE event_id = %s",
+            (TEST_ID_BASE + 8,),
+        )
+        row = cur.fetchone()
+    assert row == (None, None)

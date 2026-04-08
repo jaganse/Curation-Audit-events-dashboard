@@ -43,6 +43,11 @@ def run():
             print(f"  {mode}: {count} events upserted")
 
         print(f"Done. {total_events} events, {total_policies} policies processed.")
+        print("Refreshing materialized view mv_download_windows...")
+        with conn.cursor() as cur:
+            cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_download_windows")
+        conn.commit()
+        print("Materialized view refreshed.")
     except Exception:
         conn.rollback()
         raise

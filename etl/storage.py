@@ -38,7 +38,8 @@ ON CONFLICT (id) DO UPDATE SET
 _DELETE_POLICIES = "DELETE FROM event_policies WHERE event_id = %s"
 
 _INSERT_POLICIES = """
-INSERT INTO event_policies (event_id, policy_name, rule_name, policy_action, cve_id, severity)
+INSERT INTO event_policies (event_id, policy_name, rule_name, policy_action, cve_id, severity,
+                            condition_name, condition_category)
 VALUES %s
 """
 
@@ -67,6 +68,8 @@ def upsert_policies(conn, event_id: int, policies: list) -> int:
             p.get("policy_action") or p.get("action"),
             p.get("cve_id"),
             p.get("severity"),
+            p.get("condition_name"),
+            p.get("condition_category"),
         )
         for p in policies
     ]
