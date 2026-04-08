@@ -70,14 +70,14 @@ def _timeseries(title, sql_approved, sql_blocked, grid_y, sql_waived=None):
     }
 
 
-def _table(title, sql, grid_y, grid_x=0, grid_w=12):
+def _table(title, sql, grid_y, grid_x=0, grid_w=12, field_overrides=None):
     return {
         "type": "table",
         "title": title,
         "datasource": DS_REF,
         "gridPos": {"h": 8, "w": grid_w, "x": grid_x, "y": grid_y},
         "options": {"showHeader": True},
-        "fieldConfig": {"defaults": {}, "overrides": []},
+        "fieldConfig": {"defaults": {}, "overrides": field_overrides or []},
         "targets": [{"datasource": DS_REF, "rawSql": sql, "format": "table", "refId": "A"}],
     }
 
@@ -88,7 +88,16 @@ def _pie(title, sql, grid_y, grid_x=12, grid_w=12):
         "title": title,
         "datasource": DS_REF,
         "gridPos": {"h": 8, "w": grid_w, "x": grid_x, "y": grid_y},
-        "options": {"pieType": "pie", "legend": {"displayMode": "table", "placement": "right"}},
+        "options": {
+            "pieType": "pie",
+            "displayLabels": ["name", "percent", "value"],
+            "tooltip": {"mode": "single"},
+            "legend": {
+                "displayMode": "table",
+                "placement": "right",
+                "values": ["value", "percent"],
+            },
+        },
         "fieldConfig": {"defaults": {}, "overrides": []},
         "targets": [{"datasource": DS_REF, "rawSql": sql, "format": "table", "refId": "A"}],
     }
@@ -157,13 +166,16 @@ def _dashboard(title, uid, panels, variables):
 
 # ── SQL helpers ─────────────────────────────────────────────────────────────
 
-def _where(dry_run_flag, extra_filters="", include_repo_filter=True):
+def _where(dry_run_flag, extra_filters="", include_repo_filter=True, include_user_filter=True):
     tf = "$__timeFilter(created_at)"
     pt = "('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')"
     repo = "('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')"
+    user = "('$username' = ANY(ARRAY['', 'All']) OR username = '$username')"
     parts = [f"WHERE is_dry_run = {dry_run_flag}", f"AND {tf}", f"AND {pt}"]
     if include_repo_filter:
         parts.append(f"AND {repo}")
+    if include_user_filter:
+        parts.append(f"AND {user}")
     if extra_filters:
         parts.append(extra_filters)
     return " ".join(parts)
@@ -192,6 +204,7 @@ def real_events():
         " AND $__timeFilter(ae.created_at)"
         " AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')"
         " AND ('$repository' = ANY(ARRAY['', 'All']) OR ae.curated_repository_name = '$repository')"
+        " AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')"
     )
 
     panels = [
@@ -338,6 +351,17 @@ GROUP BY username
 ORDER BY total_events DESC
 LIMIT 20""",
             grid_y=28, grid_x=16, grid_w=8,
+            field_overrides=[{
+                "matcher": {"id": "byName", "options": "username"},
+                "properties": [{
+                    "id": "links",
+                    "value": [{
+                        "title": "Drill down to user",
+                        "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-repository=${repository}&var-username=${__data.fields.username}",
+                        "targetBlank": False,
+                    }],
+                }],
+            }],
         ),
 
         # ── 12-hour window analysis (existing, pushed to y=36/44) ──────────
@@ -352,6 +376,7 @@ FROM (
     AND $__timeFilter(created_at)
     AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
     AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+    AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
   GROUP BY username, package_name
   HAVING SUM(is_window_start) >= 3
 ) sub""",
@@ -372,6 +397,7 @@ WHERE is_dry_run = false AND action = 'blocked'
   AND $__timeFilter(created_at)
   AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
   AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
 GROUP BY package_name, package_type, username
 HAVING SUM(is_window_start) > 1
 ORDER BY unique_sessions DESC
@@ -389,6 +415,7 @@ WHERE is_dry_run = false AND action = 'approved'
   AND $__timeFilter(created_at)
   AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
   AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
 GROUP BY 1
 ORDER BY 1""",
             """SELECT
@@ -400,9 +427,28 @@ WHERE is_dry_run = false AND action = 'blocked'
   AND $__timeFilter(created_at)
   AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
   AND ('$repository' = ANY(ARRAY['', 'All']) OR curated_repository_name = '$repository')
+  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
 GROUP BY 1
 ORDER BY 1""",
             grid_y=44,
+        ),
+
+        # ── User Events Log (y=52) ─────────────────────────────────────────
+        _table(
+            "User Events Log",
+            f"""SELECT
+  created_at,
+  action,
+  package_name,
+  package_type,
+  package_version,
+  reason,
+  curated_repository_name
+FROM audit_events
+{w}
+ORDER BY created_at DESC
+LIMIT 100""",
+            grid_y=52, grid_x=0, grid_w=24,
         ),
     ]
 
@@ -415,6 +461,11 @@ ORDER BY 1""",
         _var(
             "repository", "Repository",
             "SELECT 'All' AS curated_repository_name UNION SELECT DISTINCT curated_repository_name"
+            " FROM audit_events WHERE is_dry_run = false ORDER BY 1",
+        ),
+        _var(
+            "username", "User",
+            "SELECT 'All' AS username UNION SELECT DISTINCT username"
             " FROM audit_events WHERE is_dry_run = false ORDER BY 1",
         ),
         _var(
@@ -445,6 +496,7 @@ def dry_run():
         "WHERE ae.is_dry_run = true"
         " AND $__timeFilter(ae.created_at)"
         " AND ('$package_type' = ANY(ARRAY['', 'All']) OR ae.package_type = '$package_type')"
+        " AND ('$username' = ANY(ARRAY['', 'All']) OR ae.username = '$username')"
     )
 
     panels = [
@@ -591,6 +643,17 @@ GROUP BY username
 ORDER BY total_events DESC
 LIMIT 20""",
             grid_y=28, grid_x=16, grid_w=8,
+            field_overrides=[{
+                "matcher": {"id": "byName", "options": "username"},
+                "properties": [{
+                    "id": "links",
+                    "value": [{
+                        "title": "Drill down to user",
+                        "url": "/d/${__dashboard.uid}?${__url_time_range}&var-package_type=${package_type}&var-username=${__data.fields.username}",
+                        "targetBlank": False,
+                    }],
+                }],
+            }],
         ),
 
         # ── 12-hour window analysis (existing, pushed to y=36/44) ──────────
@@ -604,6 +667,7 @@ FROM (
   WHERE is_dry_run = true AND action = 'blocked'
     AND $__timeFilter(created_at)
     AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+    AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
   GROUP BY username, package_name
   HAVING SUM(is_window_start) >= 3
 ) sub""",
@@ -623,6 +687,7 @@ FROM mv_download_windows
 WHERE is_dry_run = true AND action = 'blocked'
   AND $__timeFilter(created_at)
   AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
 GROUP BY package_name, package_type, username
 HAVING SUM(is_window_start) > 1
 ORDER BY unique_sessions DESC
@@ -639,6 +704,7 @@ WHERE is_dry_run = true AND action = 'approved'
   AND is_window_start = 1
   AND $__timeFilter(created_at)
   AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
 GROUP BY 1
 ORDER BY 1""",
             """SELECT
@@ -649,9 +715,28 @@ WHERE is_dry_run = true AND action = 'blocked'
   AND is_window_start = 1
   AND $__timeFilter(created_at)
   AND ('$package_type' = ANY(ARRAY['', 'All']) OR package_type = '$package_type')
+  AND ('$username' = ANY(ARRAY['', 'All']) OR username = '$username')
 GROUP BY 1
 ORDER BY 1""",
             grid_y=44,
+        ),
+
+        # ── User Events Log (y=52) ─────────────────────────────────────────
+        _table(
+            "User Events Log (Dry Run)",
+            f"""SELECT
+  created_at,
+  action,
+  package_name,
+  package_type,
+  package_version,
+  reason,
+  curated_repository_name
+FROM audit_events
+{w}
+ORDER BY created_at DESC
+LIMIT 100""",
+            grid_y=52, grid_x=0, grid_w=24,
         ),
     ]
 
@@ -659,6 +744,11 @@ ORDER BY 1""",
         _var(
             "package_type", "Package Type",
             "SELECT 'All' AS package_type UNION SELECT DISTINCT package_type"
+            " FROM audit_events WHERE is_dry_run = true ORDER BY 1",
+        ),
+        _var(
+            "username", "User",
+            "SELECT 'All' AS username UNION SELECT DISTINCT username"
             " FROM audit_events WHERE is_dry_run = true ORDER BY 1",
         ),
         _var(

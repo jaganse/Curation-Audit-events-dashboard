@@ -1,5 +1,7 @@
 # JFrog Curation Audit Dashboard
 
+![Dashboard](docs/Curation-dashboard.png)
+
 A self-contained Docker Compose stack that pulls JFrog Curation audit events into PostgreSQL and visualises them in Grafana. Two pre-built dashboards cover real enforcement events and dry-run (policy simulation) events, giving your security and engineering teams a clear view of what is being blocked, why, and by whom.
 
 ---
