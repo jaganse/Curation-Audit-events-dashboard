@@ -61,7 +61,7 @@ class CurationAPIClient:
                 )
             total = meta["total_count"]
 
-            events = body.get("data", [])
+            events = body.get("data") or []
             yield from events
             offset += len(events)
 

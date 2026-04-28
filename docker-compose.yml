@@ -37,6 +37,7 @@ services:
     environment:
       DATABASE_URL: postgresql://audit:audit@postgres:5432/audit
     volumes:
+      - ./etl:/app/etl:ro
       - ./instances.json:/app/instances.json:ro
     depends_on:
       postgres:
